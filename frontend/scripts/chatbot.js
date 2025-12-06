@@ -7,7 +7,7 @@ const send = document.getElementById("send");
 function appendMessage(who, text) {
   const p = document.createElement("p");
   p.className = who;
-  p.textContent = (who === "user" ? "Ty: " : "Bot: ") + text;
+  p.textContent = (who === "user" ? "Ty: " : "Z.A.N.T.: ") + text;
   chat.appendChild(p);
   chat.scrollTop = chat.scrollHeight;
 }
@@ -19,9 +19,9 @@ async function askBotMock(question) {
   // symulacja opóźnienia
   await new Promise(r => setTimeout(r, 300));
   if (question.toLowerCase().includes("składki")) {
-    return { answer: "Mock: Składki są do 10/15/20 dnia miesiąca."};
+    return { answer: "Składki są do 10/15/20 dnia miesiąca."};
   }
-  return { answer: "Mock: Nie wiem, spróbuj inaczej."};
+  return { answer: "Nie wiem, spróbuj inaczej."};
 }
 
 // --- FUNKCJA DO PODŁĄCZENIA DO BACKENDU ---

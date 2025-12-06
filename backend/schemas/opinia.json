@@ -1,0 +1,9 @@
+{
+  "name": "opinia",
+  "required_fields": [
+    "data_opinii",
+    "autor_opinii",
+    "tresc_opinii",
+    "podpis_autora"
+  ]
+}

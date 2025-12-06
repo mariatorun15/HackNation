@@ -1,0 +1,10 @@
+{
+  "name": "karta_wypadku",
+  "required_fields": [
+    "data_wypadku",
+    "miejsce_wypadku",
+    "imie_nazwisko_poszkodowanego",
+    "opis_okolicznosci",
+    "rodzaj_obrazen"
+  ]
+}

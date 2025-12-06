@@ -1,14 +1,18 @@
 # backend/app.py
-
 from flask import Flask, request, jsonify
 from flask import send_from_directory
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image
 import pytesseract
-from utils import allowed_file, analyze_file, extract_text
+from utils import allowed_file, analyze_file, extract_text, full_analyze
 
 UPLOAD_FOLDER = "uploads"
+RESULTS_FOLDER = "results"
+ALLOWED_EXT = {"png","jpg","jpeg","pdf"}
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 app = Flask(__name__, static_folder="../frontend", static_url_path="/")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -30,8 +34,9 @@ def upload_file():
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(file_path)
-        text = extract_text(file_path)
-        return jsonify({"status": "ok", "text": text})
+        #text = extract_text(file_path)
+        analysis = full_analyze(file_path)
+        return jsonify({"file_id": filename, **analysis}) #jsonify({"status": "ok", "text": text})
 
     return jsonify({"error": "Nieobsługiwany format"}), 400
 
@@ -56,6 +61,24 @@ def ask():
         answer = "Niestety nie znam odpowiedzi — skontaktuj się z obsługą."
 
     return jsonify({"answer": answer})
+
+@app.route("/complete", methods=["POST"])
+def complete():
+    data = request.json or {}
+    file_id = data.get("file_id")
+    filled = data.get("filled_fields") or {}
+    if not file_id:
+        return jsonify({"error":"Brak file_id"}), 400
+    # zapisz wynik końcowy do results/file_id.json
+    out = {
+        "file_id": file_id,
+        "filled_fields": filled
+    }
+    out_path = os.path.join(RESULTS_FOLDER, file_id + ".json")
+    import json
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(out, f, ensure_ascii=False, indent=2)
+    return jsonify({"status":"saved", "path": out_path})
 
 # opcjonalnie serwowanie frontendu statycznego (przy hostingu jednego serwera)
 @app.route("/", defaults={"path": ""})

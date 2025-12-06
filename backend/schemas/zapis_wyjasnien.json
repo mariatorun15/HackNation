@@ -1,0 +1,9 @@
+{
+  "name": "zapis_wyjasnien_poszkodowanego",
+  "required_fields": [
+    "data_zapisu",
+    "imie_nazwisko_poszkodowanego",
+    "opis_zdarzenia",
+    "podpis_poszkodowanego"
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "name": "zawiadomienie_o_wypadku",
+  "required_fields": [
+    "data_zawiadomienia",
+    "miejscowosc",
+    "nazwa_pracodawcy",
+    "opis_zdarzenia",
+    "osoby_zaangazowane"
+  ]
+}
+

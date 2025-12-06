@@ -1,3 +1,4 @@
+<!-- 
 <!doctype html>
 <html>
 <head>
@@ -7,7 +8,7 @@
 <body>
   <h1>Panel pracownika</h1>
 
-    <!-- Sekcja uploadu -->
+    <!- Sekcja uploadu ->
     <section id="upload-section">
         <h2>Wgraj dokument</h2>
         <input type="file" id="fileInput" />
@@ -16,7 +17,7 @@
         <ul id="missing-fields"></ul>
     </section>
 
-     <!-- Sekcja historii (opcjonalnie) -->
+     <!- Sekcja historii (opcjonalnie) ->
     <section id="history-section">
         <h2>Historia dokumentów</h2>
         <ul id="historyList"></ul>
@@ -27,5 +28,143 @@
   <script src="scripts/panel.js"></script>
 
   <p><a href="/">Powrót</a></p>
+</body>
+</html>
+-->
+
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <title>Panel Pracownika - Walidacja</title>
+  <style>
+    body{font-family:Arial;padding:20px;}
+    .ok{color:green}
+    .missing{color:red}
+    .field{margin:4px 0}
+    .label{font-weight:bold}
+    #raw {white-space:pre-wrap;background:#f6f6f6;padding:8px;border:1px solid #ddd}
+  </style>
+</head>
+<body>
+  <h1>Panel Pracownika</h1>
+
+  <section>
+    <h2>Wgraj dokument</h2>
+    <input type="file" id="fileInput" />
+    <button id="uploadBtn">Wyślij</button>
+    <div id="uploadMsg"></div>
+  </section>
+
+  <section id="analysisSection" style="display:none">
+    <h2>Wynik analizy</h2>
+    <div>Typ dokumentu: <span id="docType"></span></div>
+    <h3>Odczytane pola</h3>
+    <div id="extracted"></div>
+
+    <h3>Pola brakujące (wypełnij)</h3>
+    <form id="fillForm"></form>
+    <button id="saveBtn">Zapisz uzupełnione dane</button>
+
+    <h3>Podgląd wyciągniętego tekstu (fragment)</h3>
+    <div id="raw"></div>
+  </section>
+
+<script>
+const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput");
+const uploadMsg = document.getElementById("uploadMsg");
+const analysisSection = document.getElementById("analysisSection");
+const docTypeEl = document.getElementById("docType");
+const extractedEl = document.getElementById("extracted");
+const fillForm = document.getElementById("fillForm");
+const rawEl = document.getElementById("raw");
+const saveBtn = document.getElementById("saveBtn");
+
+let lastFileId = null;
+let lastExtracted = {};
+let lastMissing = [];
+
+uploadBtn.onclick = async () => {
+  uploadMsg.textContent = "";
+  analysisSection.style.display = "none";
+  extractedEl.innerHTML = "";
+  fillForm.innerHTML = "";
+  rawEl.textContent = "";
+
+  const file = fileInput.files[0];
+  if (!file) { alert("Wybierz plik"); return; }
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  uploadMsg.textContent = "Wysyłam plik...";
+  try {
+    const resp = await fetch("/upload", { method: "POST", body: fd });
+    const data = await resp.json();
+    if (data.error) {
+      uploadMsg.textContent = "Błąd: " + data.error;
+      return;
+    }
+    uploadMsg.textContent = "Plik przesłany. Wyniki analizy poniżej.";
+    lastFileId = data.file_id;
+    lastExtracted = data.extracted || {};
+    lastMissing = data.missing || [];
+    showAnalysis(data);
+  } catch (e) {
+    console.error(e);
+    uploadMsg.textContent = "Błąd sieci.";
+  }
+};
+
+function showAnalysis(data) {
+  analysisSection.style.display = "block";
+  docTypeEl.textContent = data.document_type || "nie rozpoznano";
+  extractedEl.innerHTML = "";
+  for (const [k,v] of Object.entries(data.extracted || {})) {
+    const div = document.createElement("div");
+    div.className = "field";
+    div.innerHTML = `<span class="label">${k}:</span> <span class="${v? 'ok':'missing'}">${v || '(brak)'}</span>`;
+    extractedEl.appendChild(div);
+  }
+
+  fillForm.innerHTML = "";
+  (data.missing || []).forEach(field => {
+    const row = document.createElement("div");
+    row.className = "field";
+    row.innerHTML = `<label class="label">${field}: </label><input name="${field}" />`;
+    fillForm.appendChild(row);
+  });
+
+  rawEl.textContent = data.raw_text_preview || "";
+}
+
+saveBtn.onclick = async () => {
+  const inputs = fillForm.querySelectorAll("input");
+  const filled = {};
+  inputs.forEach(i => { filled[i.name] = i.value; });
+  // merge with extracted
+  const merged = {...lastExtracted, ...filled};
+
+  const body = { file_id: lastFileId, filled_fields: merged };
+  try {
+    const resp = await fetch("/complete", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (data.status === "saved") {
+      alert("Zapisano wynik. Ścieżka: " + data.path);
+      // opcjonalnie: zaktualizuj UI
+    } else {
+      alert("Błąd zapisu");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Błąd sieci");
+  }
+};
+</script>
 </body>
 </html>

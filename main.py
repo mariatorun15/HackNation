@@ -1,0 +1,1 @@
+# czy ma sens prezentowac ładne rozwiązanie czy lepiej przedstawic wizje tego jak my widzimy wdrazanie, kozystanie oraz rozwuj oprogramowania

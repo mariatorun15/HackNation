@@ -1,21 +1,27 @@
-# backend/app.py
-from flask import Flask, request, jsonify
-from flask import send_from_directory
-import os
-from werkzeug.utils import secure_filename
-from PIL import Image
-import pytesseract
-from utils import allowed_file, analyze_file, extract_text, full_analyze
+# ... imports ...
 
-UPLOAD_FOLDER = "uploads"
-RESULTS_FOLDER = "results"
+# Get the directory where THIS file (app.py) is located
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Define paths relative to this file
+# Assuming structure is:
+# /project_root
+#    /backend/app.py
+#    /frontend/index.html
+UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
+RESULTS_FOLDER = os.path.join(BASE_DIR, "results")
+FRONTEND_FOLDER = os.path.join(BASE_DIR, "../frontend")
+
 ALLOWED_EXT = {"png","jpg","jpeg","pdf"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
-app = Flask(__name__, static_folder="../frontend", static_url_path="/")
+# Update Flask to use the absolute path
+app = Flask(__name__, static_folder=FRONTEND_FOLDER, static_url_path="/")
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+
+# ... rest of your code ...
 
 # --- ENDPOINT ---
 
@@ -84,9 +90,16 @@ def complete():
 @app.route("/", defaults={"path": ""})
 @app.route("/<path:path>")
 def serve_frontend(path):
+    # 1. Try to find the specific file (e.g., css/style.css)
     if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, "index.html")
+
+    # 2. If file not found, check if index.html exists
+    if os.path.exists(os.path.join(app.static_folder, "index.html")):
+        return send_from_directory(app.static_folder, "index.html")
+
+    # 3. If index.html is missing, return a text error so we know what's wrong
+    return f"Error: index.html not found in {app.static_folder}", 404
 
 @app.route("/analyze", methods=["POST"])
 def analyze():

@@ -6,6 +6,6 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY . .
+COPY backend/ ./  # <-- this puts contents of your repo's backend folder into /backend in container
 
-CMD ["python", "/backend/app.py"]
+CMD ["python", "app.py"]

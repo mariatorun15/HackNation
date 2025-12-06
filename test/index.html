@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>EWYP Chatbot — prototyp v2</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f6f8fb; --card:#ffffff; --accent:#2563eb; --muted:#6b7280;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:Inter,system-ui,Arial; background:linear-gradient(180deg,#eef2ff 0%, #f6f8fb 60%); color:#111827;
+      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:28px;
+    }
+    .app{
+      width:100%; max-width:900px; background:var(--card); border-radius:14px; box-shadow:0 10px 30px rgba(2,6,23,0.08);
+      overflow:hidden; display:grid; grid-template-columns:360px 1fr;
+    }
+    .left{
+      padding:18px; border-right:1px solid #eef2ff; background:linear-gradient(180deg,#fff,#fbfdff);
+    }
+    .brand{font-weight:700; color:var(--accent); margin-bottom:12px}
+    .controls{font-size:13px; color:var(--muted); margin-bottom:16px}
+    .preview{background:#f8fafc; border-radius:10px; padding:10px; height:calc(100vh - 190px); overflow:auto}
+    .right{padding:18px; display:flex; flex-direction:column; gap:12px}
+    .chat{
+      background:#f8fafc; border-radius:10px; padding:16px; flex:1; overflow:auto;
+      display:flex; flex-direction:column; gap:12px;
+    }
+    .msg{max-width:78%; padding:10px 12px; border-radius:10px; line-height:1.3}
+    .bot{background:#ffffff; box-shadow:0 1px 0 rgba(2,6,23,0.04); align-self:flex-start}
+    .user{background:var(--accent); color:white; align-self:flex-end}
+    .meta{font-size:12px; color:var(--muted); margin-top:6px}
+    .inputRow{display:flex; gap:8px; align-items:center}
+    input[type="text"]{flex:1; padding:10px 12px; border-radius:10px; border:1px solid #e6eef8; font-size:14px}
+    button{background:var(--accent); color:white; padding:10px 12px; border-radius:10px; border:0; cursor:pointer; transition:0.2s}
+    button:hover{background:#1d4ed8}
+    button:disabled{background:#cbd5e1; cursor:not-allowed}
+    .smallBtn{background:transparent; color:var(--accent); border:1px dashed #dbeafe; padding:8px 10px}
+    .smallBtn:hover{background:#eff6ff}
+    .warning{color:#b45309; font-size:13px; margin-top:6px}
+    .questionType{font-size:13px; color:var(--muted); margin-bottom:8px}
+    .answers-list{display:flex; gap:8px; flex-wrap:wrap}
+    .answers-list button{background:#fff; color:#111; border:1px solid #e6eef8; padding:6px 10px; border-radius:8px}
+    .answers-list button:hover{background:#f1f5f9; border-color:#cbd5e1}
+    footer.controls{display:flex; gap:8px; align-items:center}
+    @media (max-width:880px){
+      .app{grid-template-columns:1fr; max-width:680px}
+      .left{display:none}
+    }
+    /* Spinner for PDF loading */
+    .spinner {
+      display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-right:5px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="app" role="application">
+    <div class="left" aria-hidden="false">
+      <div class="brand">EWYP Chatbot — prototyp</div>
+      <div class="controls">Prosty interfejs czatu. Po wypełnieniu — <strong>Pobierz PDF</strong>.</div>
+      <div class="questionType">Logika: Pytania pomijane są automatycznie, jeśli odpowiesz NIE.</div>
+      <div class="preview" id="preview">
+        <strong>Obecne odpowiedzi (podgląd):</strong>
+        <div id="previewList" style="margin-top:8px; font-size:14px; color:#111827"></div>
+      </div>
+      <div style="height:14px"></div>
+      <div style="font-size:13px; color:var(--muted); margin-top:10px">Gotowe do dodania do repo. Plik single-file.</div>
+    </div>
+
+    <div class="right">
+      <div class="chat" id="chat" aria-live="polite"></div>
+
+      <div id="interactiveArea">
+        <div id="closedAnswers" style="display:none">
+          <div class="answers-list">
+            <button data-val="TAK">TAK</button>
+            <button data-val="NIE">NIE</button>
+            <button data-val="NIE WIEM">NIE WIEM</button>
+          </div>
+        </div>
+
+        <div id="textInputArea">
+          <div class="inputRow">
+            <input id="textInput" type="text" placeholder="Napisz odpowiedź..." aria-label="Odpowiedź">
+            <button id="sendBtn">Wyślij</button>
+            <button id="downloadPdf" class="smallBtn">Pobierz PDF</button>
+          </div>
+          <div id="validationMsg" class="warning" style="display:none"></div>
+        </div>
+      </div>
+
+      <footer class="controls">
+        <div style="font-size:13px; color:var(--muted)">Wprowadziłeś już część danych — można edytować je w czacie.</div>
+      </footer>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+    (function(){
+      // Definicja pytań z logiką 'showIf'
+      // showIf: { field: 'ID_PYTANIA_ZALEZNEGO', value: 'WYMAGANA_WARTOSC' }
+      const questions = [
+        { id:'pesel', label:'PESEL', type:'open', hint:'11 cyfr' },
+        { id:'doc', label:'Rodzaj, seria i numer dokumentu tożsamości', type:'open' },
+        { id:'imie', label:'Imię', type:'open' },
+        { id:'nazwisko', label:'Nazwisko', type:'open' },
+        { id:'data_ur', label:'Data urodzenia (dd/mm/rrrr)', type:'open', pattern:'date' },
+        { id:'miejsce_ur', label:'Miejsce urodzenia', type:'open' },
+        { id:'telefon', label:'Numer telefonu', type:'open' },
+
+        { id:'adres_zam', label:'Adres zamieszkania (ulica, nr domu, kod, miejscowość)', type:'open' },
+        { id:'adres_prow', label:'Adres miejsca prowadzenia pozarolniczej działalności (jeśli dotyczy)', type:'open' },
+
+        { id:'data_wypadku', label:'Data wypadku (dd/mm/rrrr)', type:'open', pattern:'date' },
+        { id:'godzina_wypadku', label:'Godzina wypadku', type:'open' },
+        { id:'miejsce_wypadku', label:'Miejsce wypadku', type:'open' },
+        { id:'plan_start', label:'Planowana godzina rozpoczęcia pracy w dniu wypadku', type:'open' },
+        { id:'plan_koniec', label:'Planowana godzina zakończenia pracy w dniu wypadku', type:'open' },
+
+        { id:'rodzaj_urazow', label:'Rodzaj doznanych urazów', type:'open' },
+        { id:'opis_okolicznosci', label:'Szczegółowy opis okoliczności, miejsca i przyczyn wypadku', type:'open' },
+
+        // Sekcja: Pierwsza pomoc
+        { id:'pierwsza_pomoc', label:'Czy była udzielona pierwsza pomoc medyczna?', type:'closed' },
+
+        // Zależne od pierwsza_pomoc = TAK
+        { id:'nazwa_pomoc', label:'Nazwa i adres placówki służby zdrowia', type:'open',
+          showIf: { field:'pierwsza_pomoc', value:'TAK' } },
+
+        { id:'organ_postep', label:'Organ, który prowadził postępowanie w sprawie wypadku (np. policja, prokuratura)', type:'open' },
+
+        // Sekcja: Maszyny
+        { id:'maszyny_obsl', label:'Czy wypadek powstał podczas obsługi maszyn, urządzeń?', type:'closed' },
+
+        // Zależne od maszyny_obsl = TAK
+        { id:'maszyna_sprawna', label:'Czy maszyna/urządzenie były sprawne i użytkowane zgodnie z zasadami?', type:'open',
+          showIf: { field:'maszyny_obsl', value:'TAK' } },
+        { id:'maszyna_atest', label:'Czy maszyna posiada atest/deklarację zgodności?', type:'closed',
+          showIf: { field:'maszyny_obsl', value:'TAK' } },
+        { id:'maszyna_ewid', label:'Czy maszyna została wpisana do ewidencji środków trwałych?', type:'closed',
+          showIf: { field:'maszyny_obsl', value:'TAK' } },
+
+        // Sekcja: Świadkowie
+        { id:'czy_swiadkowie', label:'Czy byli świadkowie wypadku?', type:'closed' },
+
+        // Zależne od czy_swiadkowie = TAK
+        { id:'swiadek1', label:'Świadek 1 – imię i nazwisko oraz kontakt', type:'open',
+          showIf: { field:'czy_swiadkowie', value:'TAK' } },
+        { id:'swiadek2', label:'Świadek 2 – imię i nazwisko oraz kontakt', type:'open',
+          showIf: { field:'czy_swiadkowie', value:'TAK' } },
+        { id:'swiadek3', label:'Świadek 3 – imię i nazwisko oraz kontakt', type:'open',
+          showIf: { field:'czy_swiadkowie', value:'TAK' } },
+
+        { id:'zalaczniki', label:'Załączniki (lista)', type:'open' },
+
+        { id:'oświadczenie', label:'Sposób odbioru odpowiedzi (np. w placówce / pocztą)', type:'open' },
+        { id:'data_podpis', label:'Data i czytelny podpis', type:'open' }
+      ];
+
+      const prefill = {};
+      const answers = {};
+      Object.assign(answers, prefill);
+
+      const chat = document.getElementById('chat');
+      const textInput = document.getElementById('textInput');
+      const sendBtn = document.getElementById('sendBtn');
+      const closedAnswers = document.getElementById('closedAnswers');
+      const previewList = document.getElementById('previewList');
+      const validationMsg = document.getElementById('validationMsg');
+      const downloadPdf = document.getElementById('downloadPdf');
+
+      let qIndex = 0;
+
+      function renderPreview(){
+        previewList.innerHTML = '';
+        for(const q of questions){
+          // Show in preview only if answered AND (condition met OR no condition)
+          if(answers[q.id]){
+             // Double check if we should show this in preview (in case user changed a previous YES to NO)
+             if(shouldShowQuestion(q)){
+                const el = document.createElement('div');
+                el.style.padding='6px 0';
+                el.innerHTML = `<strong>${q.label}:</strong> ${escapeHtml(answers[q.id])}`;
+                previewList.appendChild(el);
+             }
+          }
+        }
+      }
+
+      function escapeHtml(str){
+        if(!str) return '';
+        return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
+      }
+
+      function botMsg(text){
+        const m = document.createElement('div');
+        m.className='msg bot';
+        m.innerHTML = text;
+        chat.appendChild(m);
+        chat.scrollTop = chat.scrollHeight;
+      }
+      function userMsg(text){
+        const m = document.createElement('div');
+        m.className='msg user';
+        m.innerHTML = text;
+        chat.appendChild(m);
+        chat.scrollTop = chat.scrollHeight;
+      }
+
+      function validateField(q, val){
+        validationMsg.style.display='none';
+        if(q.pattern === 'date'){
+          const m = val.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+          if(!m){
+            validationMsg.innerText = 'Data powinna być w formacie dd/mm/rrrr';
+            validationMsg.style.display='block';
+            return false;
+          }
+          return true;
+        }
+        if(q.id === 'pesel'){
+          const digits = val.replace(/\s+/g,'');
+          if(!/^\d{11}$/.test(digits)){
+            validationMsg.innerText = 'PESEL powinien mieć 11 cyfr';
+            validationMsg.style.display='block';
+            return false;
+          }
+          return true;
+        }
+        return true;
+      }
+
+      // Check if question should be shown based on previous answers
+      function shouldShowQuestion(q) {
+        if (!q.showIf) return true;
+        const dependentVal = answers[q.showIf.field];
+        return dependentVal === q.showIf.value;
+      }
+
+      closedAnswers.addEventListener('click', (ev)=>{
+        const btn = ev.target.closest('button[data-val]');
+        if(!btn) return;
+        const v = btn.dataset.val;
+        handleAnswer(v);
+      });
+
+      sendBtn.addEventListener('click', ()=>{
+        const text = textInput.value.trim();
+        if(!text) return;
+        handleAnswer(text);
+      });
+      textInput.addEventListener('keydown', (e)=>{
+        if(e.key === 'Enter' && !e.shiftKey){
+          e.preventDefault();
+          sendBtn.click();
+        }
+      });
+
+      function start(){
+        // Render prefilled (if any)
+        for(const k of Object.keys(prefill)){
+          const q = questions.find(x=>x.id===k);
+          if(q && shouldShowQuestion(q)){
+            userMsg(`<strong>${q.label}:</strong> ${escapeHtml(prefill[k])}`);
+          }
+        }
+        renderPreview();
+        setTimeout(()=>askNext(), 500);
+      }
+
+      function askNext(){
+        if(qIndex >= questions.length){
+          botMsg('Wypełnianie zakończone — możesz pobrać PDF.');
+          textInput.placeholder = 'Notatki...';
+          closedAnswers.style.display='none';
+          return;
+        }
+
+        const q = questions[qIndex];
+
+        // LOGIKA POMIJANIA
+        if (!shouldShowQuestion(q)) {
+          // Skip this question
+          // Clean up old answer if exists (e.g. user went back and changed YES to NO)
+          if(answers[q.id]) delete answers[q.id];
+
+          qIndex++;
+          askNext(); // Recurse immediately
+          return;
+        }
+
+        botMsg(`<strong>${q.label}</strong><div style="margin-top:8px; color:#6b7280; font-size:13px">${q.type === 'closed' ? 'Wybierz opcję' : 'Wpisz treść'}</div>`);
+
+        // If already answered (and logic allows), skip interaction
+        if(answers[q.id]){
+          setTimeout(()=>{
+            userMsg(`<strong>${q.label}:</strong> ${escapeHtml(answers[q.id])}`);
+            qIndex++;
+            renderPreview();
+            setTimeout(()=>askNext(), 400);
+          }, 400);
+          return;
+        }
+
+        // Setup UI
+        if(q.type === 'closed'){
+          closedAnswers.style.display='block';
+          textInput.disabled = true;
+          sendBtn.disabled = true;
+        } else {
+          closedAnswers.style.display='none';
+          textInput.disabled = false;
+          sendBtn.disabled = false;
+          textInput.focus();
+        }
+      }
+
+      function handleAnswer(value){
+        const q = questions[qIndex];
+        if(!q){
+          userMsg(escapeHtml(value));
+          return;
+        }
+        const ok = validateField(q, value);
+        if(!ok) return;
+
+        answers[q.id] = value;
+        userMsg(`<strong>${q.label}:</strong> ${escapeHtml(value)}`);
+        renderPreview();
+
+        textInput.value = '';
+        validationMsg.style.display='none';
+        closedAnswers.style.display='none';
+        textInput.disabled = false;
+        sendBtn.disabled = false;
+
+        qIndex++;
+        setTimeout(()=>askNext(), 350);
+      }
+
+      // --- PDF GENERATION WITH POLISH CHARACTERS ---
+      downloadPdf.addEventListener('click', async ()=>{
+        const btn = downloadPdf;
+        const originalText = btn.innerText;
+        btn.innerHTML = '<span class="spinner"></span> Generuję...';
+        btn.disabled = true;
+
+        try {
+          const { jsPDF } = window.jspdf;
+          const doc = new jsPDF({format:'a4', unit:'mm'});
+
+          // 1. Ładowanie czcionki obsługującej polskie znaki (Roboto Regular)
+          // Używamy CDN, który pozwala na dostęp (CORS)
+          const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf';
+
+          const response = await fetch(fontUrl);
+          if(!response.ok) throw new Error("Błąd pobierania czcionki");
+          const fontBuffer = await response.arrayBuffer();
+
+          // Konwersja buffer -> string binary
+          const fontData = Array.from(new Uint8Array(fontBuffer)).map(b => String.fromCharCode(b)).join("");
+          const fontBase64 = btoa(fontData);
+
+          // Dodanie czcionki do VFS jsPDF
+          doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
+          doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+
+          // Ustawienie czcionki
+          doc.setFont("Roboto", "normal");
+
+          // Start PDF content
+          const margin = 15;
+          const lineHeight = 7;
+          let y = margin;
+
+          doc.setFontSize(16);
+          // Upewnij się, że tekst jest w UTF-8 (JS strings są domyślnie UTF-16, jsPDF z custom font obsłuży to)
+          doc.text('EWYP — Zawiadomienie o wypadku', margin, y);
+          y += 10;
+          doc.setFontSize(11);
+
+          for(const q of questions){
+            // Add to PDF only if question was shown (answered) or if it was valid to show
+            if(shouldShowQuestion(q)){
+              const label = q.label;
+              const val = answers[q.id] ? String(answers[q.id]) : '(brak odpowiedzi)';
+
+              // Sprawdzenie miejsca na stronie
+              if(y > 270){ doc.addPage(); y = margin; }
+
+              doc.setFont("Roboto", "normal"); // dla pewności
+              doc.setFontSize(10);
+              doc.setTextColor(100);
+              doc.text(label, margin, y);
+              y += 5;
+
+              doc.setFontSize(11);
+              doc.setTextColor(0);
+
+              // Zawijanie tekstu
+              const splitVal = doc.splitTextToSize(val, 180);
+              doc.text(splitVal, margin, y);
+              y += (splitVal.length * 6) + 4;
+            }
+          }
+
+          if(y > 270){ doc.addPage(); y = margin; }
+          doc.setFontSize(9);
+          doc.setTextColor(150);
+          doc.text('Wygenerowano automatycznie.', margin, y+10);
+
+          doc.save(`EWYP_${(answers.nazwisko || 'wypadek')}.pdf`);
+
+        } catch(e) {
+          alert("Błąd generowania PDF (sprawdź internet dla czcionki): " + e.message);
+          console.error(e);
+        } finally {
+          btn.innerHTML = originalText;
+          btn.disabled = false;
+        }
+      });
+
+      start();
+
+    })();
+  </script>
+</body>
+</html>

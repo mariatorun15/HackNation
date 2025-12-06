@@ -1,13 +1,11 @@
-# ... imports ...
+from flask import Flask, request, jsonify
+from flask import send_from_directory
+import os
+from werkzeug.utils import secure_filename
+from PIL import Image
 
-# Get the directory where THIS file (app.py) is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Define paths relative to this file
-# Assuming structure is:
-# /project_root
-#    /backend/app.py
-#    /frontend/index.html
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 RESULTS_FOLDER = os.path.join(BASE_DIR, "results")
 FRONTEND_FOLDER = os.path.join(BASE_DIR, "../frontend")

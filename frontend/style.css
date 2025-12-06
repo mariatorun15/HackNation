@@ -1,0 +1,64 @@
+p {
+    font: 28px Arial;
+  }
+
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+     }
+
+#chat {
+    border-radius: 25px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    height: 300px;
+    width: 1000px;
+    overflow:auto;
+      }
+
+#chat_container {
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+}
+
+#zant {
+    flex-shrink: 0;
+    justify-content: center;
+}
+
+#input {
+  margin-top: 30px;
+  height: 30px;
+  width: 800px;
+  background-color: powderblue;
+  border: 1px solid red;
+  overflow:auto;
+       }
+#send{
+overflow:auto;
+     }
+
+.user {
+    color: DodgerBlue;
+      }
+
+.bot {
+    color: LimeGreen;
+     }
+.input-wrapper {
+  position: relative;
+  width: 300px; /* dopasuj szerokość */
+}
+
+.input-wrapper button {
+  position: relative;
+  right: 750;
+  top: 0;
+  height: 100%;
+  border: none;
+  background-color: #4CAF50; /* kolor przycisku */
+  color: white;
+  padding: 0 15px;
+  cursor: pointer;
+}

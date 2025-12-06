@@ -1,24 +1,55 @@
-<!doctype html>
-<html>
-<head><meta charset="utf-8"><title>Panel pracownika</title></head>
-<body>
-  <h1>Panel pracownika</h1>
-  <form id="uploadForm">
-    <label>Wybierz zdjęcie: <input type="file" name="file" id="file"></label>
-    <button type="submit">Prześlij do analizy</button>
-  </form>
-  <div id="result"></div>
+const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput");
+const statusDiv = document.getElementById("status");
+const missingList = document.getElementById("missing-fields");
+const historyList = document.getElementById("historyList");
 
-  <script>
-    document.getElementById('uploadForm').onsubmit = async (e) => {
-      e.preventDefault();
-      const file = document.getElementById('file').files[0];
-      if (!file) { alert("Wybierz plik"); return; }
+// Funkcja dodająca wpis do historii
+function addToHistory(filename, result) {
+    const li = document.createElement("li");
+    li.textContent = `${filename} → ${result.status}`;
+    historyList.appendChild(li);
+}
 
-      // Na początek można tylko pokazać, że plik został wybrany:
-      document.getElementById('result').textContent = "Plik gotowy do wysłania (funkcja backendu jeszcze nie podpięta).";
-    };
-  </script>
-  <p><a href="/">Wróć do chatbota</a></p>
-</body>
-</html>
+// Obsługa kliknięcia przycisku "Wyślij"
+uploadBtn.addEventListener("click", async () => {
+    statusDiv.textContent = "";
+    missingList.innerHTML = "";
+
+    const file = fileInput.files[0];
+    if (!file) {
+        alert("Wybierz plik!");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const response = await fetch("http://127.0.0.1:5000/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.status === "ok") {
+            statusDiv.textContent = "Dokument OK ✅";
+        } else if (data.status === "wymaga_uzupełnienia") {
+            statusDiv.textContent = "Dokument wymaga uzupełnienia ⚠️";
+            data.missing.forEach(field => {
+                const li = document.createElement("li");
+                li.textContent = field;
+                missingList.appendChild(li);
+            });
+        } else {
+            statusDiv.textContent = "Błąd przy walidacji dokumentu ❌";
+        }
+
+        addToHistory(file.name, data);
+
+    } catch (err) {
+        console.error(err);
+        statusDiv.textContent = "Błąd sieci lub backendu ❌";
+    }
+});

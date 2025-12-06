@@ -7,13 +7,20 @@
 <body>
   <h1>Panel pracownika</h1>
 
-  <form id="uploadForm">
-    <label>
-      Wybierz plik:
-      <input type="file" id="file">
-    </label>
-    <button type="submit">Wyślij</button>
-  </form>
+    <!-- Sekcja uploadu -->
+    <section id="upload-section">
+        <h2>Wgraj dokument</h2>
+        <input type="file" id="fileInput" />
+        <button id="uploadBtn">Wyślij</button>
+        <div id="status"></div>
+        <ul id="missing-fields"></ul>
+    </section>
+
+     <!-- Sekcja historii (opcjonalnie) -->
+    <section id="history-section">
+        <h2>Historia dokumentów</h2>
+        <ul id="historyList"></ul>
+    </section>
 
   <div id="result"></div>
 

@@ -11,6 +11,8 @@ RESULTS_FOLDER = os.path.join(BASE_DIR, "results")
 PROJECT_ROOT = os.path.join(BASE_DIR, "..")
 FRONTEND_FOLDER = os.path.join(PROJECT_ROOT, "frontend")
 
+print(f"--- DIAGNOSTIC PATH --- The calculated FRONTEND_FOLDER is: {FRONTEND_FOLDER}")
+
 ALLOWED_EXT = {"png","jpg","jpeg","pdf"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)

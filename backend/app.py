@@ -8,11 +8,18 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 RESULTS_FOLDER = os.path.join(BASE_DIR, "results")
+# /backend/app.py
+
+# ... (path logic) ...
 PROJECT_ROOT = os.path.join(BASE_DIR, "..")
-FRONTEND_FOLDER = os.path.join(PROJECT_ROOT, "frontend")
+# 1. Join the path to 'frontend'
+unnormalized_path = os.path.join(PROJECT_ROOT, "frontend")
+
+# 2. FORCE the path to be clean, resolving the '..'
+FRONTEND_FOLDER = os.path.normpath(unnormalized_path)
 
 print(f"--- DIAGNOSTIC PATH --- The calculated FRONTEND_FOLDER is: {FRONTEND_FOLDER}")
-
+# ...
 ALLOWED_EXT = {"png","jpg","jpeg","pdf"}
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)

@@ -35,8 +35,19 @@ def upload_file():
         file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(file_path)
         #text = extract_text(file_path)
+        #analysis = full_analyze(file_path)
+        #return jsonify({"file_id": filename, **analysis}) #jsonify({"status": "ok", "text": text})
+ 
         analysis = full_analyze(file_path)
-        return jsonify({"file_id": filename, **analysis}) #jsonify({"status": "ok", "text": text})
+
+        # --- Zapis analizy do pliku JSON ---
+        import json
+        out_path = os.path.join(RESULTS_FOLDER, filename + "_analysis.json")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump({"file_id": filename, **analysis}, f, ensure_ascii=False, indent=2)
+        # --- KONIEC ZAPISU ---
+
+        return jsonify({"file_id": filename, **analysis, "path": out_path})
 
     return jsonify({"error": "Nieobsługiwany format"}), 400
 

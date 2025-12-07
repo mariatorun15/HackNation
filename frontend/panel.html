@@ -1,72 +1,49 @@
-<!-- 
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Panel pracownika</title>
-</head>
-<body>
-  <h1>Panel pracownika</h1>
-
-    <!- Sekcja uploadu ->
-    <section id="upload-section">
-        <h2>Wgraj dokument</h2>
-        <input type="file" id="fileInput" />
-        <button id="uploadBtn">Wyślij</button>
-        <div id="status"></div>
-        <ul id="missing-fields"></ul>
-    </section>
-
-     <!- Sekcja historii (opcjonalnie) ->
-    <section id="history-section">
-        <h2>Historia dokumentów</h2>
-        <ul id="historyList"></ul>
-    </section>
-
-  <div id="result"></div>
-
-  <script src="scripts/panel.js"></script>
-
-  <p><a href="/">Powrót</a></p>
-</body>
-</html>
--->
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
   <title>Panel Pracownika - Walidacja</title>
   <style>
-    body{font-family:Arial;padding:20px;}
-    .ok{color:green}
-    .missing{color:red}
-    .field{margin:4px 0}
-    .label{font-weight:bold}
-    #raw {white-space:pre-wrap;background:#f6f6f6;padding:8px;border:1px solid #ddd}
+    body { font-family: Arial; padding: 20px; }
+    .ok { color: green; }
+    .missing { color: red; }
+    .field { margin: 4px 0; }
+    .label { font-weight: bold; }
+    #raw { 
+      white-space: pre-wrap; 
+      background: #f6f6f6; 
+      padding: 8px; 
+      border: 1px solid #ddd; 
+    }
   </style>
 </head>
 <body>
+
   <h1>Panel Pracownika</h1>
 
-  <section>
+  <!-- Sekcja uploadu pojedynczego pliku 
+     <section>
     <h2>Wgraj dokument</h2>
     <input type="file" id="fileInput" />
     <button id="uploadBtn">Wyślij</button>
     <div id="uploadMsg"></div>
   </section>
+  -->
 
+  <!-- Sekcja uploadu wielu plików -->
   <section>
-  <h2>Wgraj DOKUMENTY</h2>
-    <input type="file" id="fileInputMultiple" multiple>
+    <h2>Wgraj Dokumenty</h2>
+    <input type="file" id="fileInputMultiple" multiple />
     <button id="uploadBtnMultiple">Wyślij dokumenty</button>
     <div id="uploadMsgMultiple"></div>
     <div id="resultsMultiple"></div>
   </section>
 
+  <!-- Sekcja wyników analizy -->
   <section id="analysisSection" style="display:none">
     <h2>Wynik analizy</h2>
     <div>Typ dokumentu: <span id="docType"></span></div>
+
     <h3>Odczytane pola</h3>
     <div id="extracted"></div>
 
@@ -78,186 +55,166 @@
     <div id="raw"></div>
   </section>
 
-<script>
-const uploadBtn = document.getElementById("uploadBtn");
-const fileInput = document.getElementById("fileInput");
-const uploadMsg = document.getElementById("uploadMsg");
-const analysisSection = document.getElementById("analysisSection");
-const docTypeEl = document.getElementById("docType");
-const extractedEl = document.getElementById("extracted");
-const fillForm = document.getElementById("fillForm");
-const rawEl = document.getElementById("raw");
-const saveBtn = document.getElementById("saveBtn");
-const uploadBtnMultiple = document.getElementById("uploadBtnMultiple");
-const fileInputMultiple = document.getElementById("fileInputMultiple");
-const uploadMsgMultiple = document.getElementById("uploadMsgMultiple");
-const resultsMultiple = document.getElementById("resultsMultiple");
+  <script>
+    const uploadBtn = document.getElementById("uploadBtn");
+    const fileInput = document.getElementById("fileInput");
+    const uploadMsg = document.getElementById("uploadMsg");
 
+    const uploadBtnMultiple = document.getElementById("uploadBtnMultiple");
+    const fileInputMultiple = document.getElementById("fileInputMultiple");
+    const uploadMsgMultiple = document.getElementById("uploadMsgMultiple");
+    const resultsMultiple = document.getElementById("resultsMultiple");
 
-let lastFileId = null;
-let lastExtracted = {};
-let lastMissing = [];
+    const analysisSection = document.getElementById("analysisSection");
+    const docTypeEl = document.getElementById("docType");
+    const extractedEl = document.getElementById("extracted");
+    const fillForm = document.getElementById("fillForm");
+    const rawEl = document.getElementById("raw");
+    const saveBtn = document.getElementById("saveBtn");
 
-uploadBtnMultiple.onclick = async () => {
-    resultsMultiple.innerHTML = "";
-    uploadMsgMultiple.textContent = "";
-    // Ukryj sekcję analizy, gdy rozpoczynasz nową operację wielu plików
-    analysisSection.style.display = "none";
+    let lastFileId = null;
+    let lastExtracted = {};
+    let lastMissing = [];
 
-    const files = fileInputMultiple.files;
-    if (files.length === 0) {
-        alert("Wybierz pliki");
-        return;
-    }
+    // --- Upload wielu plików ---
+    uploadBtnMultiple.onclick = async () => {
+      resultsMultiple.innerHTML = "";
+      uploadMsgMultiple.textContent = "";
+      analysisSection.style.display = "none";
 
-    uploadMsgMultiple.textContent = `Rozpoczynam wysyłanie ${files.length} plików...`;
+      const files = fileInputMultiple.files;
+      if (files.length === 0) { alert("Wybierz pliki"); return; }
 
-    // Przesyłanie plików po kolei
-    for (let i = 0; i < files.length; i++) {
+      uploadMsgMultiple.textContent = `Rozpoczynam wysyłanie ${files.length} plików...`;
+
+      for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const fileName = file.name;
-
         uploadMsgMultiple.textContent = `Wysyłam plik ${i + 1}/${files.length}: ${fileName}...`;
 
         const fd = new FormData();
         fd.append("file", file);
 
         try {
-            const resp = await fetch("/upload", { method: "POST", body: fd });
-            const data = await resp.json();
+          const resp = await fetch("/upload", { method: "POST", body: fd });
+          const data = await resp.json();
 
-            // WAŻNA ZMIANA: Obsługa wyświetlenia analizy, jeśli jest to JEDEN plik
-            if (files.length === 1 && !data.error) {
-                 uploadMsgMultiple.textContent = "Plik przesłany. Wyniki analizy poniżej.";
-                 lastFileId = data.file_id;
-                 lastExtracted = data.extracted || {};
-                 lastMissing = data.missing || [];
-                 showAnalysis(data);
-                 return; // Zakończ funkcję, jeśli obsłużyłeś pojedynczy plik
-            }
+          if (files.length === 1 && !data.error) {
+            uploadMsgMultiple.textContent = "Plik przesłany. Wyniki analizy poniżej.";
+            lastFileId = data.file_id;
+            lastExtracted = data.extracted || {};
+            lastMissing = data.missing || [];
+            showAnalysis(data);
+            return;
+          }
 
-            // Logika dla wielu plików (lub błędu)
-            const resultItem = document.createElement("div");
-            resultItem.className = "field";
+          const resultItem = document.createElement("div");
+          resultItem.className = "field";
 
-            if (data.error) {
-                resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="missing">BŁĄD: ${data.error}</span>`;
-            } else {
-                const docType = data.document_type || "nie rozpoznano";
-                resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="ok">OK - Typ: ${docType} (ID: ${data.file_id})</span>`;
-            }
-            resultsMultiple.appendChild(resultItem);
+          if (data.error) {
+            resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="missing">BŁĄD: ${data.error}</span>`;
+          } else {
+            const docType = data.document_type || "nie rozpoznano";
+            resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="ok">OK - Typ: ${docType} (ID: ${data.file_id})</span>`;
+          }
+          resultsMultiple.appendChild(resultItem);
 
         } catch (e) {
-            console.error(e);
-            const resultItem = document.createElement("div");
-            resultItem.className = "field";
-            resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="missing">Błąd sieci/serwera</span>`;
-            resultsMultiple.appendChild(resultItem);
+          console.error(e);
+          const resultItem = document.createElement("div");
+          resultItem.className = "field";
+          resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="missing">Błąd sieci/serwera</span>`;
+          resultsMultiple.appendChild(resultItem);
         }
+      }
+
+      uploadMsgMultiple.textContent = `Zakończono wysyłanie wszystkich ${files.length} plików.`;
+    };
+
+    // --- Upload pojedynczego pliku ---
+    uploadBtn.onclick = async () => {
+      uploadMsg.textContent = "";
+      analysisSection.style.display = "none";
+      extractedEl.innerHTML = "";
+      fillForm.innerHTML = "";
+      rawEl.textContent = "";
+
+      const file = fileInput.files[0];
+      if (!file) { alert("Wybierz plik"); return; }
+
+      const fd = new FormData();
+      fd.append("file", file);
+
+      uploadMsg.textContent = "Wysyłam plik...";
+      try {
+        const resp = await fetch("/upload", { method: "POST", body: fd });
+        const data = await resp.json();
+        if (data.error) {
+          uploadMsg.textContent = "Błąd: " + data.error;
+          return;
+        }
+        uploadMsg.textContent = "Plik przesłany. Wyniki analizy poniżej.";
+        lastFileId = data.file_id;
+        lastExtracted = data.extracted || {};
+        lastMissing = data.missing || [];
+        showAnalysis(data);
+      } catch (e) {
+        console.error(e);
+        uploadMsg.textContent = "Błąd sieci.";
+      }
+    };
+
+    // --- Wyświetlenie analizy ---
+    function showAnalysis(data) {
+      analysisSection.style.display = "block";
+      docTypeEl.textContent = data.document_type || "nie rozpoznano";
+      extractedEl.innerHTML = "";
+
+      for (const [k,v] of Object.entries(data.extracted || {})) {
+        const div = document.createElement("div");
+        div.className = "field";
+        div.innerHTML = `<span class="label">${k}:</span> <span class="${v? 'ok':'missing'}">${v || '(brak)'}</span>`;
+        extractedEl.appendChild(div);
+      }
+
+      fillForm.innerHTML = "";
+      (data.missing || []).forEach(field => {
+        const row = document.createElement("div");
+        row.className = "field";
+        row.innerHTML = `<label class="label">${field}: </label><input name="${field}" />`;
+        fillForm.appendChild(row);
+      });
+
+      rawEl.textContent = data.raw_text_preview || "";
     }
 
-    uploadMsgMultiple.textContent = `Zakończono wysyłanie wszystkich ${files.length} plików.`;
-};
+    // --- Zapis uzupełnionych danych ---
+    saveBtn.onclick = async () => {
+      const inputs = fillForm.querySelectorAll("input");
+      const filled = {};
+      inputs.forEach(i => { filled[i.name] = i.value; });
 
-uploadBtnMultiple.onclick = async () => {
-  uploadMsgMultiple.textContent = "";
-  analysisSection.style.display = "none";
-  extractedEl.innerHTML = "";
-  fillForm.innerHTML = "";
-  rawEl.textContent = "";
+      const merged = {...lastExtracted, ...filled};
+      const body = { file_id: lastFileId, filled_fields: merged };
 
-  const file = fileInputMultiple.files[0];
-  if (!file) { alert("Wybierz plik"); return; }
-
-  const fd = new FormData();
-  fd.append("file", file);
-
-  uploadMsgMultiple.textContent = "Wysyłam plik...";
-  try {
-    const resp = await fetch("/upload", { method: "POST", body: fd });
-    const data = await resp.json();
-    if (data.error) {
-      uploadMsgMultiple.textContent = "Błąd: " + data.error;
-      return;
-    }
-    uploadMsgMultiple.textContent = "Plik przesłany. Wyniki analizy poniżej.";
-    lastFileId = data.file_id;
-    lastExtracted = data.extracted || {};
-    lastMissing = data.missing || [];
-    showAnalysis(data);
-  } catch (e) {
-    console.error(e);
-    uploadMsgMultiple.textContent = "Błąd sieci.";
-  }
-};
-
-function showAnalysis(data) {
-    // 1. Ustaw widoczność NA POCZĄTKU
-    analysisSection.style.display = "block";
-
-    // Upewnienie się, że element jest wyczyszczony przed renderowaniem
-    extractedEl.innerHTML = "";
-    fillForm.innerHTML = "";
-    rawEl.textContent = "";
-
-    try {
-        docTypeEl.textContent = data.document_type || "nie rozpoznano";
-
-        // Wypełnianie odczytanych pól
-        for (const [k,v] of Object.entries(data.extracted || {})) {
-            const div = document.createElement("div");
-            div.className = "field";
-            // Zapewnienie, że wartość jest traktowana jako string
-            const displayValue = String(v || '(brak)');
-            div.innerHTML = `<span class="label">${k}:</span> <span class="${v ? 'ok':'missing'}">${displayValue}</span>`;
-            extractedEl.appendChild(div);
-        }
-
-        // Wypełnianie brakujących pól (formularz)
-        (data.missing || []).forEach(field => {
-            const row = document.createElement("div");
-            row.className = "field";
-            row.innerHTML = `<label class="label">${field}: </label><input name="${field}" />`;
-            fillForm.appendChild(row);
+      try {
+        const resp = await fetch("/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
         });
+        const data = await resp.json();
+        if (data.status === "saved") {
+          alert("Zapisano wynik. Ścieżka: " + data.path);
+        } else {
+          alert("Błąd zapisu");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Błąd sieci");
+      }
+    };
+  </script>
 
-        rawEl.textContent = data.raw_text_preview || "";
-
-    } catch (error) {
-        // Jeśli wystąpi błąd podczas renderowania: ukryj sekcję i zgłoś błąd
-        analysisSection.style.display = "none";
-        console.error("Błąd podczas renderowania analizy:", error);
-        alert("Wystąpił błąd podczas wyświetlania wyników analizy.");
-    }
-}
-
-saveBtn.onclick = async () => {
-  const inputs = fillForm.querySelectorAll("input");
-  const filled = {};
-  inputs.forEach(i => { filled[i.name] = i.value; });
-  // merge with extracted
-  const merged = {...lastExtracted, ...filled};
-
-  const body = { file_id: lastFileId, filled_fields: merged };
-  try {
-    const resp = await fetch("/complete", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(body)
-    });
-    const data = await resp.json();
-    if (data.status === "saved") {
-      alert("Zapisano wynik. Ścieżka: " + data.path);
-      // opcjonalnie: zaktualizuj UI
-    } else {
-      alert("Błąd zapisu");
-    }
-  } catch (e) {
-    console.error(e);
-    alert("Błąd sieci");
-  }
-};
-</script>
 </body>
 </html>

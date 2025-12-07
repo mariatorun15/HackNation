@@ -15,7 +15,7 @@ function appendMessage(who, text) {
 // --- MOCK (na start) ---
 // Zamiast wysyłać do backendu, najpierw zwracamy stałą odpowiedź.
 // Połączy się z prawdziwym backendem dopiero gdy będzie dostępny.
-async function askBotMock(question) {
+async function askBotReal(question) {
   // symulacja opóźnienia
   await new Promise(r => setTimeout(r, 300));
   if (question.toLowerCase().includes("składki")) {
@@ -39,7 +39,7 @@ async function askBotReal(question) {
 }
 
 // Użyj mocka teraz; kiedy backend będzie gotowy, zamień na askBotReal
-const askBot = askBotMock;
+const askBot = askBotReal;
 
 send.onclick = async () => {
   const q = input.value.trim();

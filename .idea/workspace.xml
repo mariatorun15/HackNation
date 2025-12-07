@@ -5,9 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b3039b20-181d-4f73-b501-dc3d1fc2965c" name="Changes" comment="front end">
+      <change afterPath="$PROJECT_DIR$/.idea/dbnavigator.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/index.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/frontend/style.css" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/style.css" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/frontend/scripts/chatbot.js" beforeDir="false" afterPath="$PROJECT_DIR$/frontend/scripts/chatbot.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -17,28 +17,35 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
+        <option value="Jupyter Notebook" />
         <option value="Python Script" />
+        <option value="Dockerfile" />
       </list>
     </option>
   </component>
   <component name="Git.Settings">
+    <option name="RECENT_BRANCH_BY_REPOSITORY">
+      <map>
+        <entry key="$PROJECT_DIR$" value="main" />
+      </map>
+    </option>
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
-  "lastFilter": {
-    "state": "OPEN",
-    "assignee": "mariatorun15"
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;mariatorun15&quot;
   }
-}]]></component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/mariatorun15/HackNation.git",
-    "accountId": "015494c9-7567-484b-89f0-dddb0f63065d"
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/mariatorun15/HackNation.git&quot;,
+    &quot;accountId&quot;: &quot;015494c9-7567-484b-89f0-dddb0f63065d&quot;
   }
-}]]></component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "associatedIndex": 5
-}]]></component>
+}</component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 5
+}</component>
   <component name="ProjectId" id="36TPMUhOtkbir5ncj2PsDLdYQcR" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -48,17 +55,35 @@
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
     "Python.app.executor": "Run",
+    "Python.assistant_console.executor": "Run",
+    "Python.chat_backend.executor": "Run",
+    "Python.ewyp_pdf.executor": "Run",
+    "Python.pdf_generator.executor": "Run",
+    "Python.test.executor": "Run",
+    "Python.test2.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
-    "git-widget-placeholder": "main",
-    "last_opened_file_path": "/Users/pascalrutkowski/Documents/HackNation/frontend/zdj",
-    "settings.editor.selected.configurable": "preferences.lookFeel"
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "testing-testing",
+    "last_opened_file_path": "/Users/pascalrutkowski/Documents/HackNation",
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$" />
+      <recent name="$PROJECT_DIR$/test/test finalny/submissions" />
+      <recent name="$PROJECT_DIR$/test/test finalny" />
+      <recent name="$PROJECT_DIR$/test" />
       <recent name="$PROJECT_DIR$/frontend/zdj" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/test/test finalny/static" />
+      <recent name="$PROJECT_DIR$/test/test finalny/templates" />
+      <recent name="$PROJECT_DIR$/test/test finalny" />
+      <recent name="$PROJECT_DIR$/test" />
+      <recent name="$PROJECT_DIR$/frontend" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -100,7 +125,183 @@
       <option name="project" value="LOCAL" />
       <updated>1765038164122</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765043736326</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1765043736326</updated>
+    </task>
+    <task id="LOCAL-00005" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765059301348</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1765059301348</updated>
+    </task>
+    <task id="LOCAL-00006" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765060611814</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1765060611814</updated>
+    </task>
+    <task id="LOCAL-00007" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765060960228</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1765060960228</updated>
+    </task>
+    <task id="LOCAL-00008" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765061559809</created>
+      <option name="number" value="00008" />
+      <option name="presentableId" value="LOCAL-00008" />
+      <option name="project" value="LOCAL" />
+      <updated>1765061559809</updated>
+    </task>
+    <task id="LOCAL-00009" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765061650537</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1765061650537</updated>
+    </task>
+    <task id="LOCAL-00010" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765062329690</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1765062329690</updated>
+    </task>
+    <task id="LOCAL-00011" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765062339116</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1765062339116</updated>
+    </task>
+    <task id="LOCAL-00012" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765062483045</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1765062483045</updated>
+    </task>
+    <task id="LOCAL-00013" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765062747937</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1765062747937</updated>
+    </task>
+    <task id="LOCAL-00014" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765063042716</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1765063042716</updated>
+    </task>
+    <task id="LOCAL-00015" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765063062680</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1765063062680</updated>
+    </task>
+    <task id="LOCAL-00016" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765063396518</created>
+      <option name="number" value="00016" />
+      <option name="presentableId" value="LOCAL-00016" />
+      <option name="project" value="LOCAL" />
+      <updated>1765063396518</updated>
+    </task>
+    <task id="LOCAL-00017" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765063761017</created>
+      <option name="number" value="00017" />
+      <option name="presentableId" value="LOCAL-00017" />
+      <option name="project" value="LOCAL" />
+      <updated>1765063761017</updated>
+    </task>
+    <task id="LOCAL-00018" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765063866062</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1765063866062</updated>
+    </task>
+    <task id="LOCAL-00019" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765064156540</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1765064156540</updated>
+    </task>
+    <task id="LOCAL-00020" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765064338232</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1765064338232</updated>
+    </task>
+    <task id="LOCAL-00021" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765065024909</created>
+      <option name="number" value="00021" />
+      <option name="presentableId" value="LOCAL-00021" />
+      <option name="project" value="LOCAL" />
+      <updated>1765065024909</updated>
+    </task>
+    <task id="LOCAL-00022" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765065306773</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1765065306773</updated>
+    </task>
+    <task id="LOCAL-00023" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765065673140</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1765065673140</updated>
+    </task>
+    <task id="LOCAL-00024" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765066711541</created>
+      <option name="number" value="00024" />
+      <option name="presentableId" value="LOCAL-00024" />
+      <option name="project" value="LOCAL" />
+      <updated>1765066711541</updated>
+    </task>
+    <task id="LOCAL-00025" summary="front end">
+      <option name="closed" value="true" />
+      <created>1765066888981</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1765066888981</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">

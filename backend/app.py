@@ -3,13 +3,22 @@ from flask import send_from_directory
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image
+from utils import *
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 RESULTS_FOLDER = os.path.join(BASE_DIR, "results")
 PROJECT_ROOT = os.path.join(BASE_DIR, "..")
+
+CURRENT = os.path.dirname(os.path.abspath(__file__))           # project/backend
+BASE = os.path.dirname(CURRENT)                                   # project/
+FRONTEND = os.path.join(BASE, "frontend")
 FRONTEND_FOLDER = os.path.join(PROJECT_ROOT, "frontend")
+TEST = os.path.join(BASE, "test")                             # project/test
+
+print("STATIC FRONTEND:", FRONTEND)
+print("STATIC TEST:", TEST)
 
 ALLOWED_EXT = {"png","jpg","jpeg","pdf"}
 
@@ -17,10 +26,31 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 # Update Flask to use the absolute path
-app = Flask(__name__, static_folder=FRONTEND_FOLDER, static_url_path="/")
+#app = Flask(__name__, static_folder=FRONTEND_FOLDER, static_url_path="/")
+
+app = Flask(
+    __name__, 
+    static_folder=FRONTEND,
+    static_url_path=""
+)
+
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 
 # ... rest of your code ...
+
+# ------------------------
+# GŁÓWNA STRONA
+# ------------------------
+@app.route("/")
+def root():
+    return send_from_directory(FRONTEND, "panel.html")
+
+# ------------------------
+# STRONY Z FOLDERU TEST
+# ------------------------
+@app.route("/test/<path:filename>")
+def serve_test(filename):
+    return send_from_directory(TEST, filename)
 
 # --- ENDPOINT ---
 
@@ -213,4 +243,3 @@ def analyze():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=True)
-

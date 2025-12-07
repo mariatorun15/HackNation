@@ -1,64 +1,59 @@
-<!-- 
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>Panel pracownika</title>
-</head>
-<body>
-  <h1>Panel pracownika</h1>
-
-    <!- Sekcja uploadu ->
-    <section id="upload-section">
-        <h2>Wgraj dokument</h2>
-        <input type="file" id="fileInput" />
-        <button id="uploadBtn">Wyślij</button>
-        <div id="status"></div>
-        <ul id="missing-fields"></ul>
-    </section>
-
-     <!- Sekcja historii (opcjonalnie) ->
-    <section id="history-section">
-        <h2>Historia dokumentów</h2>
-        <ul id="historyList"></ul>
-    </section>
-
-  <div id="result"></div>
-
-  <script src="scripts/panel.js"></script>
-
-  <p><a href="/">Powrót</a></p>
-</body>
-</html>
--->
-
 <!DOCTYPE html>
 <html lang="pl">
 <head>
   <meta charset="utf-8" />
   <title>Panel Pracownika - Walidacja</title>
   <style>
-    body{font-family:Arial;padding:20px;}
-    .ok{color:green}
-    .missing{color:red}
-    .field{margin:4px 0}
-    .label{font-weight:bold}
-    #raw {white-space:pre-wrap;background:#f6f6f6;padding:8px;border:1px solid #ddd}
+    body { font-family: Arial; padding: 20px; }
+    .ok { color: green; }
+    .missing { color: red; }
+    .field { margin: 4px 0; }
+    .label { font-weight: bold; }
+    #raw { 
+      white-space: pre-wrap; 
+      background: #f6f6f6; 
+      padding: 8px; 
+      border: 1px solid #ddd; 
+    }
   </style>
 </head>
 <body>
+
   <h1>Panel Pracownika</h1>
 
-  <section>
+  <!-- Sekcja uploadu pojedynczego pliku 
+     <section>
     <h2>Wgraj dokument</h2>
     <input type="file" id="fileInput" />
     <button id="uploadBtn">Wyślij</button>
     <div id="uploadMsg"></div>
   </section>
+  -->
+
+  <!-- Sekcja uploadu wielu plików -->
+  <section>
+    <h2>Wgraj Dokumenty</h2>
+    <input type="file" id="fileInputMultiple" multiple />
+    <button id="uploadBtnMultiple">Wyślij dokumenty</button>
+    <div id="uploadMsgMultiple"></div>
+    <div id="resultsMultiple"></div>
+  </section>
+
+  <section>
+    <div>
+      <button id="compareBtn">Porównaj pliki</button>
+    <div id="compareResult" style="margin-top: 20px;"></div>
+    </div>
+
+    <pre id="compareOutput" style="background:#f0f0f0; padding:10px; margin-top:10px;"></pre>
+  </section>
+
+  <!-- Sekcja wyników analizy -->
 
   <section id="analysisSection" style="display:none">
     <h2>Wynik analizy</h2>
     <div>Typ dokumentu: <span id="docType"></span></div>
+
     <h3>Odczytane pola</h3>
     <div id="extracted"></div>
 
@@ -70,101 +65,216 @@
     <div id="raw"></div>
   </section>
 
-<script>
-const uploadBtn = document.getElementById("uploadBtn");
-const fileInput = document.getElementById("fileInput");
-const uploadMsg = document.getElementById("uploadMsg");
-const analysisSection = document.getElementById("analysisSection");
-const docTypeEl = document.getElementById("docType");
-const extractedEl = document.getElementById("extracted");
-const fillForm = document.getElementById("fillForm");
-const rawEl = document.getElementById("raw");
-const saveBtn = document.getElementById("saveBtn");
+  <script>
+    const uploadBtn = document.getElementById("uploadBtn");
+    const fileInput = document.getElementById("fileInput");
+    const uploadMsg = document.getElementById("uploadMsg");
 
-let lastFileId = null;
-let lastExtracted = {};
-let lastMissing = [];
+    const uploadBtnMultiple = document.getElementById("uploadBtnMultiple");
+    const fileInputMultiple = document.getElementById("fileInputMultiple");
+    const uploadMsgMultiple = document.getElementById("uploadMsgMultiple");
+    const resultsMultiple = document.getElementById("resultsMultiple");
 
-uploadBtn.onclick = async () => {
-  uploadMsg.textContent = "";
-  analysisSection.style.display = "none";
-  extractedEl.innerHTML = "";
-  fillForm.innerHTML = "";
-  rawEl.textContent = "";
+    const analysisSection = document.getElementById("analysisSection");
+    const docTypeEl = document.getElementById("docType");
+    const extractedEl = document.getElementById("extracted");
+    const fillForm = document.getElementById("fillForm");
+    const rawEl = document.getElementById("raw");
+    const saveBtn = document.getElementById("saveBtn");
 
-  const file = fileInput.files[0];
-  if (!file) { alert("Wybierz plik"); return; }
+    const compareBtn = document.getElementById("compareBtn");
+    const compareResult = document.getElementById("compareResult");
 
-  const fd = new FormData();
-  fd.append("file", file);
+    let lastFileId = null;
+    let lastExtracted = {};
+    let lastMissing = [];
 
-  uploadMsg.textContent = "Wysyłam plik...";
-  try {
-    const resp = await fetch("/upload", { method: "POST", body: fd });
-    const data = await resp.json();
-    if (data.error) {
-      uploadMsg.textContent = "Błąd: " + data.error;
-      return;
+    compareBtn.onclick = async () => {
+    compareResult.innerHTML = "Trwa analiza...";
+
+    try {
+        // Pobranie listy plików *_analysis.json
+        const files = await fetch("/results").then(res => res.json());
+
+        // Wysłanie żądania do backendu
+        const res = await fetch("/compare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ files })
+        });
+
+        const data = await res.json();
+
+        if (data.error) {
+            compareResult.innerHTML = `<span style="color:red">${data.error}</span>`;
+            return;
+        }
+
+        // Wyświetlenie wniosku końcowego
+        let html = `<h3>Wniosek końcowy:</h3><p>${data.wniosek_końcowy}</p>`;
+
+        // Wyświetlenie szczegółów (wniosek_szczegółowy)
+        if (data.wniosek_szczegółowy && data.wniosek_szczegółowy.length > 0) {
+            html += `<h3>Szczegóły:</h3><ul>`;
+            data.wniosek_szczegółowy.forEach(item => {
+                // kolorowanie ✔ zielony, ✘ czerwony, ≈ pomarańczowy
+                let color = "black";
+                if (item.startsWith("✔")) color = "green";
+                else if (item.startsWith("✘")) color = "red";
+                else if (item.startsWith("≈")) color = "orange";
+                html += `<li style="color:${color}">${item}</li>`;
+            });
+            html += `</ul>`;
+        }
+
+        compareResult.innerHTML = html;
+
+    } catch (e) {
+        console.error(e);
+        compareResult.innerHTML = `<span style="color:red">Błąd sieci lub serwera</span>`;
     }
-    uploadMsg.textContent = "Plik przesłany. Wyniki analizy poniżej.";
-    lastFileId = data.file_id;
-    lastExtracted = data.extracted || {};
-    lastMissing = data.missing || [];
-    showAnalysis(data);
-  } catch (e) {
-    console.error(e);
-    uploadMsg.textContent = "Błąd sieci.";
-  }
-};
+    };
 
-function showAnalysis(data) {
-  analysisSection.style.display = "block";
-  docTypeEl.textContent = data.document_type || "nie rozpoznano";
-  extractedEl.innerHTML = "";
-  for (const [k,v] of Object.entries(data.extracted || {})) {
-    const div = document.createElement("div");
-    div.className = "field";
-    div.innerHTML = `<span class="label">${k}:</span> <span class="${v? 'ok':'missing'}">${v || '(brak)'}</span>`;
-    extractedEl.appendChild(div);
-  }
+    // --- Upload wielu plików ---
+    uploadBtnMultiple.onclick = async () => {
+      resultsMultiple.innerHTML = "";
+      uploadMsgMultiple.textContent = "";
+      analysisSection.style.display = "none";
 
-  fillForm.innerHTML = "";
-  (data.missing || []).forEach(field => {
-    const row = document.createElement("div");
-    row.className = "field";
-    row.innerHTML = `<label class="label">${field}: </label><input name="${field}" />`;
-    fillForm.appendChild(row);
-  });
+      const files = fileInputMultiple.files;
+      if (files.length === 0) { alert("Wybierz pliki"); return; }
+      if (files.length != 4) {alert("Odpowiedź bedzie nie pewna")}
 
-  rawEl.textContent = data.raw_text_preview || "";
-}
+      uploadMsgMultiple.textContent = `Rozpoczynam wysyłanie ${files.length} plików...`;
 
-saveBtn.onclick = async () => {
-  const inputs = fillForm.querySelectorAll("input");
-  const filled = {};
-  inputs.forEach(i => { filled[i.name] = i.value; });
-  // merge with extracted
-  const merged = {...lastExtracted, ...filled};
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fileName = file.name;
+        uploadMsgMultiple.textContent = `Wysyłam plik ${i + 1}/${files.length}: ${fileName}...`;
 
-  const body = { file_id: lastFileId, filled_fields: merged };
-  try {
-    const resp = await fetch("/complete", {
-      method: "POST",
-      headers: {"Content-Type":"application/json"},
-      body: JSON.stringify(body)
-    });
-    const data = await resp.json();
-    if (data.status === "saved") {
-      alert("Zapisano wynik. Ścieżka: " + data.path);
-      // opcjonalnie: zaktualizuj UI
-    } else {
-      alert("Błąd zapisu");
+        const fd = new FormData();
+        fd.append("file", file);
+
+        try {
+          const resp = await fetch("/upload", { method: "POST", body: fd });
+          const data = await resp.json();
+
+          if (files.length === 1 && !data.error) {
+            uploadMsgMultiple.textContent = "Plik przesłany. Wyniki analizy poniżej.";
+            lastFileId = data.file_id;
+            lastExtracted = data.extracted || {};
+            lastMissing = data.missing || [];
+            showAnalysis(data);
+            return;
+          }
+
+          const resultItem = document.createElement("div");
+          resultItem.className = "field";
+
+          if (data.error) {
+            resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="missing">BŁĄD: ${data.error}</span>`;
+          } else {
+            const docType = data.document_type || "nie rozpoznano";
+            resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="ok">OK - Typ: ${docType} (ID: ${data.file_id})</span>`;
+          }
+          resultsMultiple.appendChild(resultItem);
+
+        } catch (e) {
+          console.error(e);
+          const resultItem = document.createElement("div");
+          resultItem.className = "field";
+          resultItem.innerHTML = `<span class="label">${fileName}:</span> <span class="missing">Błąd sieci/serwera</span>`;
+          resultsMultiple.appendChild(resultItem);
+        }
+      }
+
+      uploadMsgMultiple.textContent = `Zakończono wysyłanie wszystkich ${files.length} plików.`;
+    };
+
+    // --- Upload pojedynczego pliku ---
+    uploadBtn.onclick = async () => {
+      uploadMsg.textContent = "";
+      analysisSection.style.display = "none";
+      extractedEl.innerHTML = "";
+      fillForm.innerHTML = "";
+      rawEl.textContent = "";
+
+      const file = fileInput.files[0];
+      if (!file) { alert("Wybierz plik"); return; }
+
+      const fd = new FormData();
+      fd.append("file", file);
+
+      uploadMsg.textContent = "Wysyłam plik...";
+      try {
+        const resp = await fetch("/upload", { method: "POST", body: fd });
+        const data = await resp.json();
+        if (data.error) {
+          uploadMsg.textContent = "Błąd: " + data.error;
+          return;
+        }
+        uploadMsg.textContent = "Plik przesłany. Wyniki analizy poniżej.";
+        lastFileId = data.file_id;
+        lastExtracted = data.extracted || {};
+        lastMissing = data.missing || [];
+        showAnalysis(data);
+      } catch (e) {
+        console.error(e);
+        uploadMsg.textContent = "Błąd sieci.";
+      }
+    };
+
+    // --- Wyświetlenie analizy ---
+    function showAnalysis(data) {
+      analysisSection.style.display = "block";
+      docTypeEl.textContent = data.document_type || "nie rozpoznano";
+      extractedEl.innerHTML = "";
+
+      for (const [k,v] of Object.entries(data.extracted || {})) {
+        const div = document.createElement("div");
+        div.className = "field";
+        div.innerHTML = `<span class="label">${k}:</span> <span class="${v? 'ok':'missing'}">${v || '(brak)'}</span>`;
+        extractedEl.appendChild(div);
+      }
+
+      fillForm.innerHTML = "";
+      (data.missing || []).forEach(field => {
+        const row = document.createElement("div");
+        row.className = "field";
+        row.innerHTML = `<label class="label">${field}: </label><input name="${field}" />`;
+        fillForm.appendChild(row);
+      });
+
+      rawEl.textContent = data.raw_text_preview || "";
     }
-  } catch (e) {
-    console.error(e);
-    alert("Błąd sieci");
-  }
-};
-</script>
+
+    // --- Zapis uzupełnionych danych ---
+    saveBtn.onclick = async () => {
+      const inputs = fillForm.querySelectorAll("input");
+      const filled = {};
+      inputs.forEach(i => { filled[i.name] = i.value; });
+
+      const merged = {...lastExtracted, ...filled};
+      const body = { file_id: lastFileId, filled_fields: merged };
+
+      try {
+        const resp = await fetch("/complete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await resp.json();
+        if (data.status === "saved") {
+          alert("Zapisano wynik. Ścieżka: " + data.path);
+        } else {
+          alert("Błąd zapisu");
+        }
+      } catch (e) {
+        console.error(e);
+        alert("Błąd sieci");
+      }
+    };
+  </script>
+
 </body>
 </html>

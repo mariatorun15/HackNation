@@ -137,10 +137,6 @@ def extract_text(file_path):
 
             text = "\n".join(text_blocks).strip()
 
-            print(">>> Extracted text preview:")
-            print(f">>> File Path: {file_path}")
-            print(text[:500])
-
             # if PDF has embedded text, return it
             if text and len(text) > 20:
                 return text
@@ -148,12 +144,8 @@ def extract_text(file_path):
             # otherwise: PDF is scanned -> convert to images -> OCR
             images = convert_from_path(file_path, dpi=300, poppler_path=r"C:\poppler-25.12.0\Library\bin")
             ocr_text = ""
-            print("PDF pages:", len(images))
             for img in images:
                 ocr_text += pytesseract.image_to_string(img, lang="pol")
-            
-                print(">>> OCR text preview:")
-                print(ocr_text[:500])
 
             return ocr_text
 
@@ -166,7 +158,7 @@ def extract_text(file_path):
 DOCUMENT_KEYWORDS = {
     "karta_wypadku": ["karta wypadku", "rodzaj obrażeń", "miejsce wypadku", "data wypadku"],
     "opinia": ["opinia", "z opinii", "autor opinii", "wskazania"],
-    "zapis_wyjasnien_poszkodowanego": ["wyjaśnien", "wyjaśnień", "poszkodowanego", "oświadczam że"],
+    "zapis_wyjasnien_poszkodowanego": ["zapis", "wyjaśnien", "wyjasnien", "wyjaśnień", "poszkodowanego", "oświadczam że"],
     "zawiadomienie_o_wypadku": ["zawiadomienie", "zawiadamia", "zawiadomienie o wypadku", "zawiadamiam"]
 }
 
@@ -183,35 +175,7 @@ def detect_document_type(text):
     return best[0]
 
 # ---- simple field extraction heuristics ----
-def find_date(text):
-    if not text:
-        return None
-    # dd.mm.yyyy or yyyy-mm-dd etc.
-    m = re.search(r"(\d{2}[.\-/]\d{2}[.\-/]\d{4})", text)
-    if m:
-        return m.group(1)
-    m = re.search(r"(\d{4}[.\-/]\d{2}[.\-/]\d{2})", text)
-    if m:
-        return m.group(1)
-    return None
-
-def find_name(text):
-    # naive: line with CAPITALIZED words (Polish names)
-    if not text:
-        return None
-    lines = text.splitlines()
-    for line in lines:
-        if re.match(r"^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząęćłńóśźż]+(\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząęćłńóśźż]+)+", line.strip()):
-            return line.strip()
-    return None
-
-def find_vehicle_number(text):
-    if not text:
-        return None
-    m = re.search(r"\b([A-Z]{1,3}-\w{1,5})\b", text)
-    if m:
-        return m.group(1)
-    return None
+from find import *
 
 def extract_fields_by_type(text, doc_type):
     # return dict with field->value or None
@@ -219,27 +183,35 @@ def extract_fields_by_type(text, doc_type):
     t = text or ""
     if doc_type == "karta_wypadku":
         data["data_wypadku"] = find_date(t)
-        data["miejsce_wypadku"] = None
-        data["imie_nazwisko_poszkodowanego"] = find_name(t)
-        data["opis_okolicznosci"] = None
-        data["rodzaj_obrazen"] = None
-        data["numer_pojazdu"] = find_vehicle_number(t)
+        data["miejsce_wypadku"] = find_place(t)
+        data["opis_zdarzenia"] = find_history(t)
+        data["rodzaj_obrazen"] = find_injuries(t)
     elif doc_type == "opinia":
-        data["data_opinii"] = find_date(t)
-        data["autor_opinii"] = find_name(t)
+        data["data_wypadku"] = find_date(t)
         data["tresc_opinii"] = None
-        data["podpis_autora"] = None
     elif doc_type == "zapis_wyjasnien_poszkodowanego":
-        data["data_zapisu"] = find_date(t)
-        data["imie_nazwisko_poszkodowanego"] = find_name(t)
-        data["opis_zdarzenia"] = None
-        data["podpis_poszkodowanego"] = None
+        data["data_wypadku"] = find_date(t)
+        data["miejsce_wypadku"] = find_place(t)
+        data["godzina_wypadku"] = find_sit_time(t)
+        data["godzina_roz_pracy"] = find_start_time(t)
+        data["godzina_zak_pracy"] = find_start_time(t)
+        data["imie_nazwisko_poszkodowanego"] = None
+        data["rodzaj_czynosci"] = None
+        data["opis_zdarzenia"] = find_history(t)
+        data["obsluga_maszyny"] = find_mashine(t)
+        data["stosowane_zab"] = None
+        data["zasady_bhp"] = find_bhp(t)
+        data["pierwsza_pomoc"] = find_aid(t)
     elif doc_type == "zawiadomienie_o_wypadku":
-        data["data_zawiadomienia"] = find_date(t)
-        data["miejscowosc"] = None
-        data["nazwa_pracodawcy"] = None
-        data["opis_zdarzenia"] = None
-        data["osoby_zaangazowane"] = None
+        data["data_wypadku"] = find_date(t)
+        data["miejsce_wypadku"] = find_place(t)
+        data["godzina_wypadku"] = find_sit_time(t)
+        data["godzina_roz_pracy"] = find_start_time(t)
+        data["godzina_zak_pracy"] = find_start_time(t)
+        data["rodzaj_obrazen"] = find_injuries(t)
+        data["opis_zdarzenia"] = find_history(t)
+        data["pierwsza_pomoc"] = find_aid(t)
+        data["obsluga_maszyny"] = find_mashine(t)
     else:
         data = {}
     return data
@@ -267,4 +239,4 @@ def full_analyze(file_path):
     extracted = extract_fields_by_type(text, doc_type) if doc_type else {}
     # fill extracted with values found in text (if heuristics found None, keep None)
     result = validate_against_schema(extracted, schema) if schema else {"status":"unknown","missing":[], "extracted": extracted}
-    return {"document_type": doc_type, "raw_text_preview": (text[:1000] if text else ""), **result}
+    return {"document_type": doc_type, "raw_text_preview": (text if text else ""), **result}

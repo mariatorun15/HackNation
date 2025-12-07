@@ -3,8 +3,7 @@
   "required_fields": [
     "data_wypadku",
     "miejsce_wypadku",
-    "imie_nazwisko_poszkodowanego",
-    "opis_okolicznosci",
+    "opis_zdarzenia",
     "rodzaj_obrazen"
   ]
 }

@@ -1,9 +1,17 @@
 {
   "name": "zapis_wyjasnien_poszkodowanego",
   "required_fields": [
-    "data_zapisu",
+    "data_wypadku",
+    "miejsce_wypadku",
+    "godzina_wypadku",
+    "godzina_roz_pracy",
+    "godzina_zak_pracy",
     "imie_nazwisko_poszkodowanego",
+    "rodzaj_czynosci",
     "opis_zdarzenia",
-    "podpis_poszkodowanego"
+    "obsluga_maszyny",
+    "stosowane_zab",
+    "zasady_bhp",
+    "pierwsza_pomoc"
   ]
 }

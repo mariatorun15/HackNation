@@ -1,0 +1,13 @@
+{
+  "file_id": "opinia2.pdf",
+  "document_type": "opinia",
+  "raw_text_preview": "(znak sprawy)\n\nOpinia w sprawie prawnej kwalifikacji wypadku\n\nImię i nazwisko poszkodowanego:\n\nKwestia do rozstrzygnięcia:\n\nCzy uznać zdarzenie z 10—04—2025 r. za wypadek podczas:\n— wykonywama zwykłych czynności zw:ązanych z prowadzeniem pozarolnlcze] działalności;\n\n. WWWWWWHWWW%\nopiece—nad — dziećmi—w — wieku—de—hat—3\n\nWniosek:\nW oparciu o całość przedłożonej dokumentacji, proponuję uznać zdarzenie z 10—04—2025 r. za wypadek\npodczas wykonywania zwykłych czynności związanych z prowadzeniem pozarolniczej działalności.\n\nUzasadnienie:\n\nZgodnie z zaświadczeniem z Centralnej Ewidencji i Informacji o Działalności Gospodarczej\nbrowadzi działalność gospodarczą z zakresu konserwacji i naprawy pojazdów samochodowych z\n. wyłączeniem motocykli.\n\nW dniu wypadku tj. 10—04—2025 r. poszkodowany rozpoczął pracę o godzinie 08:00. Jego praca oolegała na\nnaprawie samochodu osobowego marki Volkswagen Passat 1a zlecenie\n\nDkoło godziny 9:30 przechodząc obok kanatu\ndiagnostycznego poślizgnął się na plamie płynu chłodniczego, utracił równowagę i wpadł do tego kanału\ndoznając urazu. Pierwszej pomocy udzielono poszkodowanemu na Izbie Przyjęć Szpitala w : gdzie\nrozpoznano: stłuczenie stawu ramiennego lewego.\n\n........................................................................................\n",
+  "status": "wymaga_uzupełnienia",
+  "missing": [
+    "tresc_opinii"
+  ],
+  "extracted": {
+    "data_wypadku": "10—04—2025",
+    "tresc_opinii": null
+  }
+}

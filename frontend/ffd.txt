@@ -1,0 +1,215 @@
+{
+  uploadMsg.textContent = "";
+  analysisSection.style.display = "none";
+  extractedEl.innerHTML = "";
+  fillForm.innerHTML = "";
+  rawEl.textContent = "";
+
+  const file = fileInput.files[0];
+  if (!file) { alert("Wybierz plik"); return; }
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  uploadMsg.textContent = "Wysyłam plik...";
+  try {
+    const resp = await fetch("/upload", { method: "POST", body: fd });
+    const data = await resp.json();
+    if (data.error) {
+      uploadMsg.textContent = "Błąd: " + data.error;
+      return;
+    }
+    uploadMsg.textContent = "Plik przesłany. Wyniki analizy poniżej.";
+    lastFileId = data.file_id;
+    lastExtracted = data.extracted || {};
+    lastMissing = data.missing || [];
+    showAnalysis(data);
+  } catch (e) {
+    console.error(e);
+    uploadMsg.textContent = "Błąd sieci.";
+  }
+}; 
+
+
+
+
+<script>
+const uploadBtn = document.getElementById("uploadBtn");
+const fileInput = document.getElementById("fileInput");
+const uploadMsg = document.getElementById("uploadMsg");
+const analysisSection = document.getElementById("analysisSection");
+const docTypeEl = document.getElementById("docType");
+const extractedEl = document.getElementById("extracted");
+const fillForm = document.getElementById("fillForm");
+const rawEl = document.getElementById("raw");
+const saveBtn = document.getElementById("saveBtn");
+const resultsEl = document.getElementById("results");
+const formData = new FormData();
+const files = document.getElementById("fileInput").files;
+
+let lastFileId = null;
+let lastExtracted = {};
+let lastMissing = [];
+
+
+uploadBtn.onclick = async () => {
+    uploadMsg.textContent = "";
+    resultsEl.innerHTML = "";
+
+    const files = fileInput.files;
+    if (!files.length) {
+        alert("Wybierz pliki");
+        return;
+    }
+
+    const fd = new FormData();
+    for (let i = 0; i < files.length; i++) {
+        fd.append("files", files[i]);
+    }
+
+    uploadMsg.textContent = "Wysyłam i analizuję dokumenty…";
+
+    try {
+        const resp = await fetch("/upload-multiple", {
+            method: "POST",
+            body: fd
+        });
+
+        const data = await resp.json();
+        uploadMsg.textContent = "Analiza zakończona.";
+
+        // Wyświetl analizę każdego pliku
+        data.forEach(result => renderFileResult(result));
+
+    } catch (e) {
+        console.error(e);
+        uploadMsg.textContent = "Błąd sieci";
+    }
+};
+
+function renderFileResult(result) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "doc-card";
+
+    wrapper.innerHTML = `
+        <h3>${result.filename}</h3>
+        <p><b>Typ dokumentu:</b> ${result.document_type || "nie rozpoznano"}</p>
+
+        <h4>Odczytane pola:</h4>
+        <div class="extracted"></div>
+
+        <h4>Brakujące pola:</h4>
+        <div class="missing"></div>
+
+        <details>
+            <summary>Podgląd tekstu OCR</summary>
+            <pre class="raw">${result.raw_text_preview || "(brak)"}</pre>
+        </details>
+        
+        <button class="saveBtn">Zapisz komplet danych</button>
+    `;
+
+    // wstawiamy wartości odczytane
+    const extractedBox = wrapper.querySelector(".extracted");
+    for (const [k, v] of Object.entries(result.extracted || {})) {
+        const div = document.createElement("div");
+        div.innerHTML = `<b>${k}:</b> ${v || "<span style='color:red'>(brak)</span>"}`;
+        extractedBox.appendChild(div);
+    }
+
+    // generowanie formularza do brakujących pól
+    const missingBox = wrapper.querySelector(".missing");
+    (result.missing || []).forEach(field => {
+        const row = document.createElement("div");
+        row.innerHTML = `
+            <label><b>${field}:</b> </label>
+            <input name="${field}" data-file="${result.file_id}">
+        `;
+        missingBox.appendChild(row);
+    });
+
+    // zapis kompletu danych
+    const saveBtn = wrapper.querySelector(".saveBtn");
+    saveBtn.onclick = async () => {
+        const inputs = missingBox.querySelectorAll("input");
+        const filled = {};
+        inputs.forEach(i => {
+            filled[i.name] = i.value;
+        });
+
+        const body = {
+            file_id: result.file_id,
+            filled_fields: { ...result.extracted, ...filled }
+        };
+
+        try {
+            const resp = await fetch("/complete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+
+            const r = await resp.json();
+            if (r.status === "saved") {
+                alert("Zapisano dane dla pliku: " + result.filename);
+            } else {
+                alert("Błąd zapisu");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Błąd sieci");
+        }
+    };
+
+    resultsEl.appendChild(wrapper);
+};
+
+function showAnalysis(data) {
+  analysisSection.style.display = "block";
+  docTypeEl.textContent = data.document_type || "nie rozpoznano";
+  extractedEl.innerHTML = "";
+  for (const [k,v] of Object.entries(data.extracted || {})) {
+    const div = document.createElement("div");
+    div.className = "field";
+    div.innerHTML = `<span class="label">${k}:</span> <span class="${v? 'ok':'missing'}">${v || '(brak)'}</span>`;
+    extractedEl.appendChild(div);
+  }
+
+  fillForm.innerHTML = "";
+  (data.missing || []).forEach(field => {
+    const row = document.createElement("div");
+    row.className = "field";
+    row.innerHTML = `<label class="label">${field}: </label><input name="${field}" />`;
+    fillForm.appendChild(row);
+  });
+
+  rawEl.textContent = data.raw_text_preview || "";
+}
+
+saveBtn.onclick = async () => {
+  const inputs = fillForm.querySelectorAll("input");
+  const filled = {};
+  inputs.forEach(i => { filled[i.name] = i.value; });
+  // merge with extracted
+  const merged = {...lastExtracted, ...filled};
+
+  const body = { file_id: lastFileId, filled_fields: merged };
+  try {
+    const resp = await fetch("/complete", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(body)
+    });
+    const data = await resp.json();
+    if (data.status === "saved") {
+      alert("Zapisano wynik. Ścieżka: " + data.path);
+      // opcjonalnie: zaktualizuj UI
+    } else {
+      alert("Błąd zapisu");
+    }
+  } catch (e) {
+    console.error(e);
+    alert("Błąd sieci");
+  }
+};
+</script>

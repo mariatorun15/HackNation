@@ -40,11 +40,21 @@ def upload_file():
         file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
         file.save(file_path)
         #text = extract_text(file_path)
+        #analysis = full_analyze(file_path)
+        #return jsonify({"file_id": filename, **analysis}) #jsonify({"status": "ok", "text": text})
+ 
         analysis = full_analyze(file_path)
-        return jsonify({"file_id": filename, **analysis}) #jsonify({"status": "ok", "text": text})
+
+        # --- Zapis analizy do pliku JSON ---
+        import json
+        out_path = os.path.join(RESULTS_FOLDER, filename + "_analysis.json")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump({"file_id": filename, **analysis}, f, ensure_ascii=False, indent=2)
+        # --- KONIEC ZAPISU ---
+
+        return jsonify({"file_id": filename, **analysis, "path": out_path})
 
     return jsonify({"error": "Nieobsługiwany format"}), 400
-
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -66,6 +76,97 @@ def ask():
         answer = "Niestety nie znam odpowiedzi — skontaktuj się z obsługą."
 
     return jsonify({"answer": answer})
+
+
+@app.route("/compare", methods=["POST"])
+def compare():
+    import json
+
+    data = request.get_json() or {}
+    files = data.get("files", [])
+
+    if not files:
+        return jsonify({"error": "Brak listy plików"}), 400
+
+    loaded = []
+    for f in files:
+        path = os.path.join(RESULTS_FOLDER, f)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as fp:
+                loaded.append(json.load(fp))
+
+    if not loaded:
+        return jsonify({"error": "Brak poprawnych plików"}), 400
+
+    # -------------------------
+    # PORÓWNANIE PARAMETRÓW
+    # -------------------------
+    diffs = {}
+    matches = {}
+
+    all_keys = set()
+    for doc in loaded:
+        # używamy filled_fields jeśli istnieje, inaczej extracted
+        fields = doc.get("filled_fields") or doc.get("extracted") or {}
+        all_keys |= set(fields.keys())
+
+    for key in all_keys:
+        values = [ (doc.get("filled_fields") or doc.get("extracted") or {}).get(key) for doc in loaded]
+        unique_values = set([v for v in values if v is not None])
+        if len(unique_values) == 0:
+            continue
+        elif len(unique_values) == 1:
+            matches[key] = list(unique_values)[0]
+        else:
+            diffs[key] = list(unique_values)
+
+    # -------------------------
+    # ROZSZERZONY WNIOSEK
+    # -------------------------
+    consistency_report = []
+    strong_signals = 0
+    weak_signals = 0
+
+    for key in all_keys:
+        values = [ (doc.get("filled_fields") or doc.get("extracted") or {}).get(key) for doc in loaded]
+        non_null = [v for v in values if v is not None]
+        if not non_null:
+            continue
+        unique_values = set(non_null)
+        most_common_value = max(set(non_null), key=non_null.count)
+        ratio = non_null.count(most_common_value) / len(non_null)
+
+        label = key.replace("_", " ").capitalize()
+
+        if len(unique_values) == 1:
+            consistency_report.append(f"✔ {label}: wszystkie dokumenty są zgodne ({most_common_value}).")
+            strong_signals += 1
+        elif ratio > 0.6:
+            consistency_report.append(f"≈ {label}: większość dokumentów podaje {most_common_value}, ale występują też inne wartości: {list(unique_values)}.")
+            weak_signals += 1
+        else:
+            consistency_report.append(f"✘ {label}: wartości różnią się znacząco ({list(unique_values)}).")
+
+    if strong_signals >= 3:
+        final_conclusion = "Dokumenty wykazują wysoki poziom spójności – zdarzenie jest prawdopodobne."
+    elif strong_signals >= 1 or weak_signals >= 2:
+        final_conclusion = "Dokumenty są częściowo zgodne – zdarzenie umiarkowanie prawdopodobne."
+    else:
+        final_conclusion = "Dokumenty są niespójne – nie można potwierdzić zdarzenia."
+
+    return jsonify({
+        "różnice": diffs,
+        "zgodności": matches,
+        "wniosek_szczegółowy": consistency_report,
+        "wniosek_końcowy": final_conclusion
+    })
+
+
+@app.route("/results", methods=["GET"])
+def list_results():
+    files = [f for f in os.listdir(RESULTS_FOLDER) if f.endswith("_analysis.json")]
+    return jsonify(files)
+
 
 @app.route("/complete", methods=["POST"])
 def complete():
@@ -92,13 +193,7 @@ def serve_frontend(path):
     # 1. Try to find the specific file (e.g., css/style.css)
     if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
-
-    # 2. If file not found, check if index.html exists
-    if os.path.exists(os.path.join(app.static_folder, "index.html")):
-        return send_from_directory(app.static_folder, "index.html")
-
-    # 3. If index.html is missing, return a text error so we know what's wrong
-    return f"Error: index.html not found in {app.static_folder}", 404
+    return send_from_directory(app.static_folder, "panel.html")
 
 @app.route("/analyze", methods=["POST"])
 def analyze():

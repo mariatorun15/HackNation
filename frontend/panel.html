@@ -42,12 +42,14 @@
   <section>
     <div>
       <button id="compareBtn">Porównaj pliki</button>
+    <div id="compareResult" style="margin-top: 20px;"></div>
     </div>
 
     <pre id="compareOutput" style="background:#f0f0f0; padding:10px; margin-top:10px;"></pre>
   </section>
 
   <!-- Sekcja wyników analizy -->
+
   <section id="analysisSection" style="display:none">
     <h2>Wynik analizy</h2>
     <div>Typ dokumentu: <span id="docType"></span></div>
@@ -81,24 +83,56 @@
     const saveBtn = document.getElementById("saveBtn");
 
     const compareBtn = document.getElementById("compareBtn");
+    const compareResult = document.getElementById("compareResult");
 
     let lastFileId = null;
     let lastExtracted = {};
     let lastMissing = [];
 
     compareBtn.onclick = async () => {
-    // przykładowo pobieramy wszystkie pliki *_analysis.json
-    const files = await fetch("/results").then(res => res.json());
+    compareResult.innerHTML = "Trwa analiza...";
 
-    const res = await fetch("/compare", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ files })
-    });
+    try {
+        // Pobranie listy plików *_analysis.json
+        const files = await fetch("/results").then(res => res.json());
 
-    const data = await res.json();
-    document.getElementById("compareOutput").textContent = JSON.stringify(data, null, 2);
+        // Wysłanie żądania do backendu
+        const res = await fetch("/compare", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ files })
+        });
 
+        const data = await res.json();
+
+        if (data.error) {
+            compareResult.innerHTML = `<span style="color:red">${data.error}</span>`;
+            return;
+        }
+
+        // Wyświetlenie wniosku końcowego
+        let html = `<h3>Wniosek końcowy:</h3><p>${data.wniosek_końcowy}</p>`;
+
+        // Wyświetlenie szczegółów (wniosek_szczegółowy)
+        if (data.wniosek_szczegółowy && data.wniosek_szczegółowy.length > 0) {
+            html += `<h3>Szczegóły:</h3><ul>`;
+            data.wniosek_szczegółowy.forEach(item => {
+                // kolorowanie ✔ zielony, ✘ czerwony, ≈ pomarańczowy
+                let color = "black";
+                if (item.startsWith("✔")) color = "green";
+                else if (item.startsWith("✘")) color = "red";
+                else if (item.startsWith("≈")) color = "orange";
+                html += `<li style="color:${color}">${item}</li>`;
+            });
+            html += `</ul>`;
+        }
+
+        compareResult.innerHTML = html;
+
+    } catch (e) {
+        console.error(e);
+        compareResult.innerHTML = `<span style="color:red">Błąd sieci lub serwera</span>`;
+    }
     };
 
     // --- Upload wielu plików ---

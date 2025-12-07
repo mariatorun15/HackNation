@@ -77,7 +77,6 @@ def ask():
 def compare():
     import json
 
-    # Lista plików do analizy – frontend może wysłać np. ["p1.json", "p2.json"]
     data = request.get_json() or {}
     files = data.get("files", [])
 
@@ -97,57 +96,66 @@ def compare():
     # -------------------------
     # PORÓWNANIE PARAMETRÓW
     # -------------------------
-    diffs = {}     # parametry, które są różne
-    matches = {}   # parametry, które są zgodne
+    diffs = {}
+    matches = {}
 
-    # pobierz listę wszystkich pól
     all_keys = set()
     for doc in loaded:
-        all_keys |= set(doc["extracted"].keys())
+        # używamy filled_fields jeśli istnieje, inaczej extracted
+        fields = doc.get("filled_fields") or doc.get("extracted") or {}
+        all_keys |= set(fields.keys())
 
     for key in all_keys:
-        values = [doc["extracted"].get(key) for doc in loaded]
-        unique = set(values)
-
-        if len(unique) == 1:
-            matches[key] = list(unique)[0]
+        values = [ (doc.get("filled_fields") or doc.get("extracted") or {}).get(key) for doc in loaded]
+        unique_values = set([v for v in values if v is not None])
+        if len(unique_values) == 0:
+            continue
+        elif len(unique_values) == 1:
+            matches[key] = list(unique_values)[0]
         else:
-            diffs[key] = list(unique)
+            diffs[key] = list(unique_values)
 
     # -------------------------
-    # WNIOSEK O CZAS I MIEJSCE
+    # ROZSZERZONY WNIOSEK
     # -------------------------
+    consistency_report = []
+    strong_signals = 0
+    weak_signals = 0
 
-    def most_common(lst):
-        return max(set(lst), key=lst.count)
+    for key in all_keys:
+        values = [ (doc.get("filled_fields") or doc.get("extracted") or {}).get(key) for doc in loaded]
+        non_null = [v for v in values if v is not None]
+        if not non_null:
+            continue
+        unique_values = set(non_null)
+        most_common_value = max(set(non_null), key=non_null.count)
+        ratio = non_null.count(most_common_value) / len(non_null)
 
-    result_summary = {}
+        label = key.replace("_", " ").capitalize()
 
-    # analizujemy "data" + "miejsce"
-    times = [doc["extracted"].get("data") for doc in loaded]
-    places = [doc["extracted"].get("miejsce") for doc in loaded]
+        if len(unique_values) == 1:
+            consistency_report.append(f"✔ {label}: wszystkie dokumenty są zgodne ({most_common_value}).")
+            strong_signals += 1
+        elif ratio > 0.6:
+            consistency_report.append(f"≈ {label}: większość dokumentów podaje {most_common_value}, ale występują też inne wartości: {list(unique_values)}.")
+            weak_signals += 1
+        else:
+            consistency_report.append(f"✘ {label}: wartości różnią się znacząco ({list(unique_values)}).")
 
-    common_time = most_common(times)
-    common_place = most_common(places)
-
-    time_consistency = times.count(common_time) / len(times)
-    place_consistency = places.count(common_place) / len(places)
-
-    if time_consistency > 0.5 and place_consistency > 0.5:
-        result_summary["wniosek"] = (
-            "Prawdopodobnie sytuacja rzeczywiście miała miejsce – "
-            "data i miejsce są zgodne w większości dokumentów."
-        )
+    if strong_signals >= 3:
+        final_conclusion = "Dokumenty wykazują wysoki poziom spójności – zdarzenie jest prawdopodobne."
+    elif strong_signals >= 1 or weak_signals >= 2:
+        final_conclusion = "Dokumenty są częściowo zgodne – zdarzenie umiarkowanie prawdopodobne."
     else:
-        result_summary["wniosek"] = (
-            "Brak wystarczającej zgodności daty i miejsca, aby potwierdzić zdarzenie."
-        )
+        final_conclusion = "Dokumenty są niespójne – nie można potwierdzić zdarzenia."
 
     return jsonify({
         "różnice": diffs,
         "zgodności": matches,
-        **result_summary
+        "wniosek_szczegółowy": consistency_report,
+        "wniosek_końcowy": final_conclusion
     })
+
 
 @app.route("/results", methods=["GET"])
 def list_results():

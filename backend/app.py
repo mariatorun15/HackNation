@@ -8,7 +8,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 UPLOAD_FOLDER = os.path.join(BASE_DIR, "uploads")
 RESULTS_FOLDER = os.path.join(BASE_DIR, "results")
-FRONTEND_FOLDER = os.path.join(BASE_DIR, "../frontend")
+PROJECT_ROOT = os.path.join(BASE_DIR, "..")
+FRONTEND_FOLDER = os.path.join(PROJECT_ROOT, "frontend")
 
 ALLOWED_EXT = {"png","jpg","jpeg","pdf"}
 

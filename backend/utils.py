@@ -137,10 +137,6 @@ def extract_text(file_path):
 
             text = "\n".join(text_blocks).strip()
 
-            print(">>> Extracted text preview:")
-            print(f">>> File Path: {file_path}")
-            print(text[:500])
-
             # if PDF has embedded text, return it
             if text and len(text) > 20:
                 return text
@@ -148,12 +144,8 @@ def extract_text(file_path):
             # otherwise: PDF is scanned -> convert to images -> OCR
             images = convert_from_path(file_path, dpi=300, poppler_path=r"C:\poppler-25.12.0\Library\bin")
             ocr_text = ""
-            print("PDF pages:", len(images))
             for img in images:
                 ocr_text += pytesseract.image_to_string(img, lang="pol")
-            
-                print(">>> OCR text preview:")
-                print(ocr_text[:500])
 
             return ocr_text
 
@@ -166,7 +158,7 @@ def extract_text(file_path):
 DOCUMENT_KEYWORDS = {
     "karta_wypadku": ["karta wypadku", "rodzaj obrażeń", "miejsce wypadku", "data wypadku"],
     "opinia": ["opinia", "z opinii", "autor opinii", "wskazania"],
-    "zapis_wyjasnien_poszkodowanego": ["wyjaśnien", "wyjaśnień", "poszkodowanego", "oświadczam że"],
+    "zapis_wyjasnien_poszkodowanego": ["zapis", "wyjaśnien", "wyjasnien", "wyjaśnień", "poszkodowanego", "oświadczam że"],
     "zawiadomienie_o_wypadku": ["zawiadomienie", "zawiadamia", "zawiadomienie o wypadku", "zawiadamiam"]
 }
 
@@ -183,44 +175,7 @@ def detect_document_type(text):
     return best[0]
 
 # ---- simple field extraction heuristics ----
-def find_date(text):
-    if not text:
-        return None
-    # dd.mm.yyyy or yyyy-mm-dd etc.
-    m = re.search(r"(\d{2}[.\-/]\d{2}[.\-/]\d{4})", text)
-    if m:
-        return m.group(1)
-    m = re.search(r"(\d{4}[.\-/]\d{2}[.\-/]\d{2})", text)
-    if m:
-        return m.group(1)
-    return None
-
-def find_time(text):
-    if not text:
-        return None
-    # dd.mm.yyyy or yyyy-mm-dd etc.
-    m = re.search(r"(godzina wypadku)(\d{2}[.,]\d{2})", text)
-    if m:
-        return m.group(1)
-    return None
-
-def find_name(text):
-    # naive: line with CAPITALIZED words (Polish names)
-    if not text:
-        return None
-    lines = text.splitlines()
-    for line in lines:
-        if re.match(r"^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząęćłńóśźż]+(\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząęćłńóśźż]+)+", line.strip()):
-            return line.strip()
-    return None
-
-def find_vehicle_number(text):
-    if not text:
-        return None
-    m = re.search(r"\b([A-Z]{1,3}-\w{1,5})\b", text)
-    if m:
-        return m.group(1)
-    return None
+from find import *
 
 def extract_fields_by_type(text, doc_type):
     # return dict with field->value or None
@@ -239,28 +194,28 @@ def extract_fields_by_type(text, doc_type):
         data["podpis_autora"] = None
     elif doc_type == "zapis_wyjasnien_poszkodowanego":
         data["data_wyp"] = find_date(t)
-        data["miejsce_wyp"] = find_name(t)
-        data["godzina_wyp"] = None
-        data["godzina_rozp_pracy"] = None
-        data["godzina_zak_pracy"] = None
+        data["miejsce_wyp"] = find_place(t)
+        data["godzina_wyp"] = find_time(t)
+        data["godzina_rozp_pracy"] = find_time(t)
+        data["godzina_zak_pracy"] = find_time(t)
         data["imie_nazwisko_poszkodowanego"] = None
         data["rodzaj_czynosci"] = None
-        data["opis_zdarzenia"] = None
-        data["obsluga_maszyny"] = None
+        data["opis_zdarzenia"] = find_history(t)
+        data["obsluga_maszyny"] = find_mashine(t)
         data["stosowane_zab"] = None
-        data["zasady_bhp"] = None
-        data["pierwsza_pomoc"] = None
+        data["zasady_bhp"] = find_bhp(t)
+        data["pierwsza_pomoc"] = find_aid(t)
     elif doc_type == "zawiadomienie_o_wypadku":
         data["data_wypadku"] = find_date(t)
-        data["miejscowosc"] = None
+        data["miejscowosc"] = find_place(t)
         data["godzina_wypadku"] = find_time(t)
-        data["miejsce"] = None
-        data["godzina_roz_pracy"] = None
-        data["godzina_zak_pracy"] = None
-        data["rodzaj_urazow"] = None
-        data["opis_zdarzenia"] = None
-        data["pierwsza_pomoc"] = None
-        data["obsluga_maszyny"] = None
+        data["miejsce"] = find_place(t)
+        data["godzina_roz_pracy"] = find_time(t)
+        data["godzina_zak_pracy"] = find_time(t)
+        data["rodzaj_urazow"] = find_injuries(t)
+        data["opis_zdarzenia"] = find_history(t)
+        data["pierwsza_pomoc"] = find_aid(t)
+        data["obsluga_maszyny"] = find_mashine(t)
     else:
         data = {}
     return data

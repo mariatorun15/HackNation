@@ -40,7 +40,6 @@ def upload_file():
 
     return jsonify({"error": "Nieobsługiwany format"}), 400
 
-
 @app.route("/ask", methods=["POST"])
 def ask():
     data = request.get_json() or {}
@@ -86,7 +85,7 @@ def complete():
 def serve_frontend(path):
     if path != "" and os.path.exists(os.path.join(app.static_folder, path)):
         return send_from_directory(app.static_folder, path)
-    return send_from_directory(app.static_folder, "index.html")
+    return send_from_directory(app.static_folder, "panel.html")
 
 @app.route("/analyze", methods=["POST"])
 def analyze():

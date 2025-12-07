@@ -1,11 +1,15 @@
 {
   "name": "zawiadomienie_o_wypadku",
   "required_fields": [
-    "data_zawiadomienia",
-    "miejscowosc",
-    "nazwa_pracodawcy",
+    "data_wypadku",
+    "godzina_wypadku",
+    "miejsce",
+    "godzina_roz_pracy",
+    "godzina_zak_pracy",
+    "rodzaj_urazow",
     "opis_zdarzenia",
-    "osoby_zaangazowane"
+    "pierwsza_pomoc",
+    "obsluga_maszyny"
   ]
 }
 

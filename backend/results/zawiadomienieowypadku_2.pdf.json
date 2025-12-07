@@ -1,4 +1,15 @@
 {
   "file_id": "zawiadomienieowypadku_2.pdf",
-  "filled_fields": {}
+  "filled_fields": {
+    "data_wypadku": "10.04.2025",
+    "godzina_roz_pracy": "",
+    "godzina_wypadku": "8",
+    "godzina_zak_pracy": "",
+    "miejsce": "",
+    "miejscowosc": null,
+    "obsluga_maszyny": "",
+    "opis_zdarzenia": "",
+    "pierwsza_pomoc": "",
+    "rodzaj_urazow": ""
+  }
 }

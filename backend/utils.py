@@ -195,6 +195,15 @@ def find_date(text):
         return m.group(1)
     return None
 
+def find_time(text):
+    if not text:
+        return None
+    # dd.mm.yyyy or yyyy-mm-dd etc.
+    m = re.search(r"(godzina wypadku)(\d{2}[.,]\d{2})", text)
+    if m:
+        return m.group(1)
+    return None
+
 def find_name(text):
     # naive: line with CAPITALIZED words (Polish names)
     if not text:
@@ -223,23 +232,35 @@ def extract_fields_by_type(text, doc_type):
         data["imie_nazwisko_poszkodowanego"] = find_name(t)
         data["opis_okolicznosci"] = None
         data["rodzaj_obrazen"] = None
-        data["numer_pojazdu"] = find_vehicle_number(t)
     elif doc_type == "opinia":
-        data["data_opinii"] = find_date(t)
+        data["data_wypadku"] = find_date(t)
         data["autor_opinii"] = find_name(t)
         data["tresc_opinii"] = None
         data["podpis_autora"] = None
     elif doc_type == "zapis_wyjasnien_poszkodowanego":
-        data["data_zapisu"] = find_date(t)
-        data["imie_nazwisko_poszkodowanego"] = find_name(t)
+        data["data_wyp"] = find_date(t)
+        data["miejsce_wyp"] = find_name(t)
+        data["godzina_wyp"] = None
+        data["godzina_rozp_pracy"] = None
+        data["godzina_zak_pracy"] = None
+        data["imie_nazwisko_poszkodowanego"] = None
+        data["rodzaj_czynosci"] = None
         data["opis_zdarzenia"] = None
-        data["podpis_poszkodowanego"] = None
+        data["obsluga_maszyny"] = None
+        data["stosowane_zab"] = None
+        data["zasady_bhp"] = None
+        data["pierwsza_pomoc"] = None
     elif doc_type == "zawiadomienie_o_wypadku":
-        data["data_zawiadomienia"] = find_date(t)
+        data["data_wypadku"] = find_date(t)
         data["miejscowosc"] = None
-        data["nazwa_pracodawcy"] = None
+        data["godzina_wypadku"] = find_time(t)
+        data["miejsce"] = None
+        data["godzina_roz_pracy"] = None
+        data["godzina_zak_pracy"] = None
+        data["rodzaj_urazow"] = None
         data["opis_zdarzenia"] = None
-        data["osoby_zaangazowane"] = None
+        data["pierwsza_pomoc"] = None
+        data["obsluga_maszyny"] = None
     else:
         data = {}
     return data
@@ -267,4 +288,4 @@ def full_analyze(file_path):
     extracted = extract_fields_by_type(text, doc_type) if doc_type else {}
     # fill extracted with values found in text (if heuristics found None, keep None)
     result = validate_against_schema(extracted, schema) if schema else {"status":"unknown","missing":[], "extracted": extracted}
-    return {"document_type": doc_type, "raw_text_preview": (text[:1000] if text else ""), **result}
+    return {"document_type": doc_type, "raw_text_preview": (text if text else ""), **result}

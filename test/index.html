@@ -3,433 +3,499 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>EWYP Chatbot — prototyp v2</title>
+  <title>EWYP Chatbot — ZANT v3</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    :root{
-      --bg:#f6f8fb; --card:#ffffff; --accent:#2563eb; --muted:#6b7280;
-    }
+    :root{ --bg:#f0f2f5; --card:#ffffff; --accent:#0052a3; --muted:#666; --bot-bg:#eef3f8; --user-bg:#0052a3; }
     *{box-sizing:border-box}
-    body{
-      margin:0; font-family:Inter,system-ui,Arial; background:linear-gradient(180deg,#eef2ff 0%, #f6f8fb 60%); color:#111827;
-      min-height:100vh; display:flex; align-items:center; justify-content:center; padding:28px;
+    body{ margin:0; font-family:Inter,system-ui,sans-serif; background:var(--bg); color:#333; height:100vh; display:flex; padding:20px; gap:20px; justify-content:center;}
+
+    /* Layout */
+    .app-container { display:flex; width:100%; max-width:1100px; background:var(--card); border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.05); overflow:hidden; }
+
+    /* Sidebar */
+    .sidebar { width:320px; background:#f8fafc; border-right:1px solid #e2e8f0; padding:20px; display:flex; flex-direction:column; }
+    .logo { font-weight:700; font-size:18px; color:var(--accent); margin-bottom:5px; }
+    .subtitle { font-size:12px; color:var(--muted); margin-bottom:20px; line-height:1.4; }
+    .status-box { background:#fff; border:1px solid #e2e8f0; border-radius:8px; padding:12px; font-size:13px; margin-bottom:10px; }
+    .status-title { font-weight:600; margin-bottom:4px; font-size:11px; text-transform:uppercase; color:var(--muted); }
+    .doc-list { font-size:13px; margin-top:auto; }
+    .doc-list li { margin-bottom:4px; color:var(--muted); }
+
+    /* Chat Area */
+    .main { flex:1; display:flex; flex-direction:column; position:relative; }
+    .chat-window { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:16px; scroll-behavior:smooth; }
+
+    .msg { max-width:80%; padding:12px 16px; border-radius:12px; line-height:1.5; font-size:15px; position:relative; animation:fadeIn 0.3s ease; }
+    .msg.bot { background:var(--bot-bg); color:#1e293b; align-self:flex-start; border-bottom-left-radius:2px; }
+    .msg.user { background:var(--user-bg); color:#fff; align-self:flex-end; border-bottom-right-radius:2px; }
+    .msg strong { font-weight:600; }
+
+    /* Input Area */
+    .input-area { padding:20px; background:#fff; border-top:1px solid #e2e8f0; display:flex; flex-direction:column; gap:10px; }
+    .options-row { display:flex; gap:8px; flex-wrap:wrap; }
+    .option-btn { background:#fff; border:1px solid #cbd5e1; color:#334155; padding:8px 16px; border-radius:20px; cursor:pointer; font-size:14px; transition:0.2s; }
+    .option-btn:hover { background:#f1f5f9; border-color:#94a3b8; }
+
+    .text-row { display:flex; gap:10px; }
+    input[type="text"] { flex:1; padding:12px; border:1px solid #cbd5e1; border-radius:8px; outline:none; font-size:15px; }
+    input[type="text"]:focus { border-color:var(--accent); ring:2px solid rgba(0,82,163,0.1); }
+
+    button.send-btn { background:var(--accent); color:white; border:none; padding:0 24px; border-radius:8px; font-weight:600; cursor:pointer; transition:0.2s; }
+    button.send-btn:hover { background:#003d7a; }
+    button.send-btn:disabled { background:#cbd5e1; cursor:not-allowed; }
+
+    .action-btn { width:100%; padding:12px; margin-top:10px; background:#10b981; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:600; display:none; }
+    .action-btn:hover { background:#059669; }
+
+    .system-note { font-size:12px; color:#ef4444; margin-top:4px; display:none; }
+
+    @keyframes fadeIn { from{opacity:0; transform:translateY(5px)} to{opacity:1; transform:translateY(0)} }
+
+    /* Spinner */
+    .spinner { display:inline-block; width:12px; height:12px; border:2px solid rgba(255,255,255,0.4); border-top-color:#fff; border-radius:50%; animation:spin 0.8s linear infinite; margin-right:6px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media (max-width: 800px) {
+      .sidebar { display:none; }
+      .app-container { max-width:100%; height:100%; border-radius:0; }
+      body { padding:0; }
     }
-    .app{
-      width:100%; max-width:900px; background:var(--card); border-radius:14px; box-shadow:0 10px 30px rgba(2,6,23,0.08);
-      overflow:hidden; display:grid; grid-template-columns:360px 1fr;
-    }
-    .left{
-      padding:18px; border-right:1px solid #eef2ff; background:linear-gradient(180deg,#fff,#fbfdff);
-    }
-    .brand{font-weight:700; color:var(--accent); margin-bottom:12px}
-    .controls{font-size:13px; color:var(--muted); margin-bottom:16px}
-    .preview{background:#f8fafc; border-radius:10px; padding:10px; height:calc(100vh - 190px); overflow:auto}
-    .right{padding:18px; display:flex; flex-direction:column; gap:12px}
-    .chat{
-      background:#f8fafc; border-radius:10px; padding:16px; flex:1; overflow:auto;
-      display:flex; flex-direction:column; gap:12px;
-    }
-    .msg{max-width:78%; padding:10px 12px; border-radius:10px; line-height:1.3}
-    .bot{background:#ffffff; box-shadow:0 1px 0 rgba(2,6,23,0.04); align-self:flex-start}
-    .user{background:var(--accent); color:white; align-self:flex-end}
-    .meta{font-size:12px; color:var(--muted); margin-top:6px}
-    .inputRow{display:flex; gap:8px; align-items:center}
-    input[type="text"]{flex:1; padding:10px 12px; border-radius:10px; border:1px solid #e6eef8; font-size:14px}
-    button{background:var(--accent); color:white; padding:10px 12px; border-radius:10px; border:0; cursor:pointer; transition:0.2s}
-    button:hover{background:#1d4ed8}
-    button:disabled{background:#cbd5e1; cursor:not-allowed}
-    .smallBtn{background:transparent; color:var(--accent); border:1px dashed #dbeafe; padding:8px 10px}
-    .smallBtn:hover{background:#eff6ff}
-    .warning{color:#b45309; font-size:13px; margin-top:6px}
-    .questionType{font-size:13px; color:var(--muted); margin-bottom:8px}
-    .answers-list{display:flex; gap:8px; flex-wrap:wrap}
-    .answers-list button{background:#fff; color:#111; border:1px solid #e6eef8; padding:6px 10px; border-radius:8px}
-    .answers-list button:hover{background:#f1f5f9; border-color:#cbd5e1}
-    footer.controls{display:flex; gap:8px; align-items:center}
-    @media (max-width:880px){
-      .app{grid-template-columns:1fr; max-width:680px}
-      .left{display:none}
-    }
-    /* Spinner for PDF loading */
-    .spinner {
-      display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3);
-      border-radius: 50%; border-top-color: #fff; animation: spin 1s ease-in-out infinite; margin-right:5px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div class="app" role="application">
-    <div class="left" aria-hidden="false">
-      <div class="brand">EWYP Chatbot — prototyp</div>
-      <div class="controls">Prosty interfejs czatu. Po wypełnieniu — <strong>Pobierz PDF</strong>.</div>
-      <div class="questionType">Logika: Pytania pomijane są automatycznie, jeśli odpowiesz NIE.</div>
-      <div class="preview" id="preview">
-        <strong>Obecne odpowiedzi (podgląd):</strong>
-        <div id="previewList" style="margin-top:8px; font-size:14px; color:#111827"></div>
-      </div>
-      <div style="height:14px"></div>
-      <div style="font-size:13px; color:var(--muted); margin-top:10px">Gotowe do dodania do repo. Plik single-file.</div>
+
+<div class="app-container">
+  <div class="sidebar">
+    <div class="logo">ZANT — Asystent Wypadkowy</div>
+    <div class="subtitle">System wspomagania zgłoszeń wypadków przy pracy dla osób prowadzących działalność gospodarczą.</div>
+
+    <div class="status-box">
+      <div class="status-title">Twoja Firma (z CEIDG)</div>
+      <div id="companyInfo" style="color:#94a3b8; font-style:italic;">(Oczekiwanie na NIP...)</div>
     </div>
 
-    <div class="right">
-      <div class="chat" id="chat" aria-live="polite"></div>
-
-      <div id="interactiveArea">
-        <div id="closedAnswers" style="display:none">
-          <div class="answers-list">
-            <button data-val="TAK">TAK</button>
-            <button data-val="NIE">NIE</button>
-            <button data-val="NIE WIEM">NIE WIEM</button>
-          </div>
-        </div>
-
-        <div id="textInputArea">
-          <div class="inputRow">
-            <input id="textInput" type="text" placeholder="Napisz odpowiedź..." aria-label="Odpowiedź">
-            <button id="sendBtn">Wyślij</button>
-            <button id="downloadPdf" class="smallBtn">Pobierz PDF</button>
-          </div>
-          <div id="validationMsg" class="warning" style="display:none"></div>
-        </div>
-      </div>
-
-      <footer class="controls">
-        <div style="font-size:13px; color:var(--muted)">Wprowadziłeś już część danych — można edytować je w czacie.</div>
-      </footer>
+    <div class="status-box">
+      <div class="status-title">Postęp zgłoszenia</div>
+      <div id="progressInfo">0%</div>
     </div>
+
+    <div style="margin-top:20px; font-weight:600; font-size:13px; color:var(--accent)">Wykryte braki / Wskazówki:</div>
+    <ul class="doc-list" id="hintsList">
+      <li>Rozpocznij czat, aby przeanalizować wypadek.</li>
+    </ul>
   </div>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <div class="main">
+    <div class="chat-window" id="chat">
+      </div>
 
-  <script>
-    (function(){
-      // Definicja pytań z logiką 'showIf'
-      // showIf: { field: 'ID_PYTANIA_ZALEZNEGO', value: 'WYMAGANA_WARTOSC' }
-      const questions = [
-        { id:'pesel', label:'PESEL', type:'open', hint:'11 cyfr' },
-        { id:'doc', label:'Rodzaj, seria i numer dokumentu tożsamości', type:'open' },
-        { id:'imie', label:'Imię', type:'open' },
-        { id:'nazwisko', label:'Nazwisko', type:'open' },
-        { id:'data_ur', label:'Data urodzenia (dd/mm/rrrr)', type:'open', pattern:'date' },
-        { id:'miejsce_ur', label:'Miejsce urodzenia', type:'open' },
-        { id:'telefon', label:'Numer telefonu', type:'open' },
+    <div class="input-area">
+      <div class="options-row" id="optionsRow"></div>
 
-        { id:'adres_zam', label:'Adres zamieszkania (ulica, nr domu, kod, miejscowość)', type:'open' },
-        { id:'adres_prow', label:'Adres miejsca prowadzenia pozarolniczej działalności (jeśli dotyczy)', type:'open' },
+      <div class="text-row">
+        <input type="text" id="userInput" placeholder="Wpisz odpowiedź..." autocomplete="off">
+        <button class="send-btn" id="sendBtn">Wyślij</button>
+      </div>
+      <div class="system-note" id="validationMsg"></div>
 
-        { id:'data_wypadku', label:'Data wypadku (dd/mm/rrrr)', type:'open', pattern:'date' },
-        { id:'godzina_wypadku', label:'Godzina wypadku', type:'open' },
-        { id:'miejsce_wypadku', label:'Miejsce wypadku', type:'open' },
-        { id:'plan_start', label:'Planowana godzina rozpoczęcia pracy w dniu wypadku', type:'open' },
-        { id:'plan_koniec', label:'Planowana godzina zakończenia pracy w dniu wypadku', type:'open' },
+      <button class="action-btn" id="downloadPdfBtn">Pobierz Dokumentację (PDF)</button>
+    </div>
+  </div>
+</div>
 
-        { id:'rodzaj_urazow', label:'Rodzaj doznanych urazów', type:'open' },
-        { id:'opis_okolicznosci', label:'Szczegółowy opis okoliczności, miejsca i przyczyn wypadku', type:'open' },
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
-        // Sekcja: Pierwsza pomoc
-        { id:'pierwsza_pomoc', label:'Czy była udzielona pierwsza pomoc medyczna?', type:'closed' },
+<script>
+(function(){
+  // --- KONFIGURACJA PYTAŃ (SCENARIUSZ) ---
+  const scenario = [
+    {
+      id: 'tryb',
+      text: 'Dzień dobry. Jestem wirtualnym asystentem ZUS. Pomogę Ci zgłosić wypadek przy prowadzeniu działalności. Co chcesz zrobić?',
+      type: 'choice',
+      options: ['Zgłoszenie wypadku (Zawiadomienie)', 'Wyjaśnienia poszkodowanego', 'Oba dokumenty jednocześnie']
+    },
+    {
+      id: 'rola',
+      text: 'W jakim charakterze występujesz?',
+      type: 'choice',
+      options: ['Jestem poszkodowanym (przedsiębiorca)', 'Jestem pełnomocnikiem / członkiem rodziny'],
+      hint: 'Jeśli jesteś pełnomocnikiem, system przypomni o załączeniu pełnomocnictwa.'
+    },
+    {
+      id: 'nip',
+      text: 'Podaj NIP działalności gospodarczej poszkodowanego. Pozwoli mi to pobrać dane z CEIDG (symulacja).',
+      type: 'text',
+      validate: (val) => /^\d{10}$/.test(val.replace(/\D/g,'')) ? true : 'NIP musi składać się z 10 cyfr.'
+    },
+    // --- BLOK DANYCH OSOBOWYCH (Skrócony na potrzeby demo) ---
+    { id: 'imie', text: 'Podaj imię poszkodowanego:', type: 'text' },
+    { id: 'nazwisko', text: 'Podaj nazwisko poszkodowanego:', type: 'text' },
 
-        // Zależne od pierwsza_pomoc = TAK
-        { id:'nazwa_pomoc', label:'Nazwa i adres placówki służby zdrowia', type:'open',
-          showIf: { field:'pierwsza_pomoc', value:'TAK' } },
+    // --- BLOK OKOLICZNOŚCI (Analiza 4 elementów wypadku) ---
+    {
+      id: 'data_godzina',
+      text: 'Kiedy doszło do zdarzenia? Podaj datę i godzinę (np. 01.12.2024 14:30).',
+      type: 'text',
+      validate: (val) => val.length > 5 // prosta walidacja
+    },
+    {
+      id: 'miejsce',
+      text: 'Gdzie dokładnie miał miejsce wypadek? (Adres lub opis miejsca)',
+      type: 'text'
+    },
+    {
+      id: 'analiza_intro',
+      text: 'Teraz przeanalizujemy przebieg zdarzenia, aby ustalić, czy spełnia ono ustawowe znamiona wypadku przy pracy. Będę pytał o szczegóły.',
+      type: 'info' // Informacja, nie pytanie
+    },
+    {
+      id: 'czynnosc_przed',
+      text: 'Co dokładnie robiłeś/aś w momencie tuż przed wypadkiem? Jaki miało to związek z prowadzoną działalnością?',
+      type: 'text',
+      hint: 'Np. "Rozładowywałem towar dla klienta", "Jechałem do biura księgowego". To kluczowe dla ustalenia związku z pracą.'
+    },
+    {
+      id: 'zdarzenie',
+      text: 'Co się wydarzyło? Opisz nagłe zdarzenie (np. upadek, uderzenie, poślizgnięcie).',
+      type: 'text',
+      hint: 'Wypadek musi być zdarzeniem nagłym.'
+    },
+    {
+      id: 'przyczyna_zew',
+      text: 'Jaka była przyczyna zewnętrzna tego zdarzenia? Co sprawiło, że do niego doszło?',
+      type: 'text',
+      hint: 'Np. "Plama oleju na posadzce", "Wadliwe działanie maszyny", "Uderzenie przez inny pojazd". Nie może to być przyczyna tkwiąca wyłącznie w organizmie (np. zawał bez wysiłku).'
+    },
+    {
+      id: 'uraz',
+      text: 'Jakich obrażeń doznałeś/aś w wyniku tego zdarzenia?',
+      type: 'text',
+      hint: 'Np. "Złamanie nogi", "Rana cięta dłoni". Musi wystąpić uraz medyczny.'
+    },
 
-        { id:'organ_postep', label:'Organ, który prowadził postępowanie w sprawie wypadku (np. policja, prokuratura)', type:'open' },
+    // --- BLOK MEDYCZNY I ŚWIADKOWIE ---
+    {
+      id: 'dokumentacja_med',
+      text: 'Czy posiadasz dokumentację medyczną potwierdzającą uraz (np. wypis ze szpitala, zaświadczenie od lekarza)?',
+      type: 'choice',
+      options: ['TAK', 'NIE - dostarczę później', 'NIE - nie byłem u lekarza']
+    },
+    {
+      id: 'swiadkowie',
+      text: 'Czy byli świadkowie zdarzenia?',
+      type: 'choice',
+      options: ['TAK', 'NIE']
+    },
+    // Pytanie warunkowe (logika w JS obsłuży showIf)
+    {
+      id: 'dane_swiadkow',
+      text: 'Podaj dane świadków (Imię, Nazwisko, adres/kontakt) - jest to ważne dla celów dowodowych.',
+      type: 'text',
+      condition: (answers) => answers.swiadkowie === 'TAK'
+    },
 
-        // Sekcja: Maszyny
-        { id:'maszyny_obsl', label:'Czy wypadek powstał podczas obsługi maszyn, urządzeń?', type:'closed' },
+    // --- ZAKOŃCZENIE ---
+    {
+      id: 'koniec',
+      text: 'Dziękuję. Zebrałem niezbędne informacje. Przeanalizowałem zgłoszenie. Kliknij poniżej, aby wygenerować dokumenty i instrukcję.',
+      type: 'end'
+    }
+  ];
 
-        // Zależne od maszyny_obsl = TAK
-        { id:'maszyna_sprawna', label:'Czy maszyna/urządzenie były sprawne i użytkowane zgodnie z zasadami?', type:'open',
-          showIf: { field:'maszyny_obsl', value:'TAK' } },
-        { id:'maszyna_atest', label:'Czy maszyna posiada atest/deklarację zgodności?', type:'closed',
-          showIf: { field:'maszyny_obsl', value:'TAK' } },
-        { id:'maszyna_ewid', label:'Czy maszyna została wpisana do ewidencji środków trwałych?', type:'closed',
-          showIf: { field:'maszyny_obsl', value:'TAK' } },
+  // --- STAN APLIKACJI ---
+  let currentStep = 0;
+  const answers = {};
+  const chatWindow = document.getElementById('chat');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const optionsRow = document.getElementById('optionsRow');
+  const validationMsg = document.getElementById('validationMsg');
+  const companyInfoBox = document.getElementById('companyInfo');
+  const hintsList = document.getElementById('hintsList');
+  const progressInfo = document.getElementById('progressInfo');
+  const downloadPdfBtn = document.getElementById('downloadPdfBtn');
 
-        // Sekcja: Świadkowie
-        { id:'czy_swiadkowie', label:'Czy byli świadkowie wypadku?', type:'closed' },
+  // --- FUNKCJE POMOCNICZE ---
 
-        // Zależne od czy_swiadkowie = TAK
-        { id:'swiadek1', label:'Świadek 1 – imię i nazwisko oraz kontakt', type:'open',
-          showIf: { field:'czy_swiadkowie', value:'TAK' } },
-        { id:'swiadek2', label:'Świadek 2 – imię i nazwisko oraz kontakt', type:'open',
-          showIf: { field:'czy_swiadkowie', value:'TAK' } },
-        { id:'swiadek3', label:'Świadek 3 – imię i nazwisko oraz kontakt', type:'open',
-          showIf: { field:'czy_swiadkowie', value:'TAK' } },
+  function addMsg(text, sender = 'bot') {
+    const div = document.createElement('div');
+    div.className = `msg ${sender}`;
+    div.innerHTML = text; // allow HTML
+    chatWindow.appendChild(div);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
+  }
 
-        { id:'zalaczniki', label:'Załączniki (lista)', type:'open' },
+  function updateSidebar(key, val) {
+    // 1. Symulacja CEIDG po wpisaniu NIP
+    if(key === 'nip') {
+      companyInfoBox.innerHTML = '<span class="spinner"></span> Pobieram dane z CEIDG...';
+      setTimeout(() => {
+        // Symulacja danych na podstawie NIP (zawsze sukces w demo)
+        const pkd = '41.20.Z'; // Roboty budowlane
+        const nazwa = `FIRMA USŁUGOWA "JAN-BUD" ${answers.nazwisko || ''}`;
+        answers['_pkd'] = pkd;
+        answers['_firma'] = nazwa;
 
-        { id:'oświadczenie', label:'Sposób odbioru odpowiedzi (np. w placówce / pocztą)', type:'open' },
-        { id:'data_podpis', label:'Data i czytelny podpis', type:'open' }
-      ];
+        companyInfoBox.innerHTML = `
+          <strong>${nazwa}</strong><br>
+          NIP: ${val}<br>
+          PKD wiodące: ${pkd}<br>
+          <span style="color:green; font-size:11px">● Status: Aktywna</span>
+        `;
+        addMsg(`Pobrałem dane Twojej firmy z CEIDG: <strong>${nazwa} (PKD: ${pkd})</strong>. System dostosuje pytania do branży budowlanej.`, 'bot');
+      }, 1500);
+    }
 
-      const prefill = {};
-      const answers = {};
-      Object.assign(answers, prefill);
+    // 2. Aktualizacja listy braków/wskazówek
+    if(key === 'rola' && val.includes('pełnomocnik')) {
+      const li = document.createElement('li');
+      li.style.color = '#d97706';
+      li.innerText = '❗ Wymagane załączenie pełnomocnictwa (OL-PEL).';
+      hintsList.appendChild(li);
+    }
 
-      const chat = document.getElementById('chat');
-      const textInput = document.getElementById('textInput');
-      const sendBtn = document.getElementById('sendBtn');
-      const closedAnswers = document.getElementById('closedAnswers');
-      const previewList = document.getElementById('previewList');
-      const validationMsg = document.getElementById('validationMsg');
-      const downloadPdf = document.getElementById('downloadPdf');
+    if(key === 'dokumentacja_med' && val.includes('NIE - nie byłem')) {
+        const li = document.createElement('li');
+        li.style.color = 'red';
+        li.innerText = '❗ Brak dokumentacji medycznej utrudni uznanie wypadku.';
+        hintsList.appendChild(li);
+        addMsg('UWAGA: Brak wizyty u lekarza może skutkować nieuznaniem zdarzenia za wypadek (brak dowodu urazu). Zalecana pilna konsultacja lekarska.', 'bot');
+    }
 
-      let qIndex = 0;
+    // 3. Pasek postępu
+    const prog = Math.round((currentStep / scenario.length) * 100);
+    progressInfo.innerText = `${prog}%`;
+    progressInfo.style.background = `linear-gradient(90deg, #dbeafe ${prog}%, transparent ${prog}%)`;
+  }
 
-      function renderPreview(){
-        previewList.innerHTML = '';
-        for(const q of questions){
-          // Show in preview only if answered AND (condition met OR no condition)
-          if(answers[q.id]){
-             // Double check if we should show this in preview (in case user changed a previous YES to NO)
-             if(shouldShowQuestion(q)){
-                const el = document.createElement('div');
-                el.style.padding='6px 0';
-                el.innerHTML = `<strong>${q.label}:</strong> ${escapeHtml(answers[q.id])}`;
-                previewList.appendChild(el);
-             }
-          }
-        }
-      }
+  function nextStep() {
+    if(currentStep >= scenario.length) return;
 
-      function escapeHtml(str){
-        if(!str) return '';
-        return String(str).replace(/[&<>"']/g, s => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[s]));
-      }
+    const q = scenario[currentStep];
 
-      function botMsg(text){
-        const m = document.createElement('div');
-        m.className='msg bot';
-        m.innerHTML = text;
-        chat.appendChild(m);
-        chat.scrollTop = chat.scrollHeight;
-      }
-      function userMsg(text){
-        const m = document.createElement('div');
-        m.className='msg user';
-        m.innerHTML = text;
-        chat.appendChild(m);
-        chat.scrollTop = chat.scrollHeight;
-      }
+    // Sprawdzenie warunku (jeśli pytanie warunkowe)
+    if(q.condition && !q.condition(answers)) {
+      currentStep++;
+      nextStep();
+      return;
+    }
 
-      function validateField(q, val){
-        validationMsg.style.display='none';
-        if(q.pattern === 'date'){
-          const m = val.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-          if(!m){
-            validationMsg.innerText = 'Data powinna być w formacie dd/mm/rrrr';
-            validationMsg.style.display='block';
-            return false;
-          }
-          return true;
-        }
-        if(q.id === 'pesel'){
-          const digits = val.replace(/\s+/g,'');
-          if(!/^\d{11}$/.test(digits)){
-            validationMsg.innerText = 'PESEL powinien mieć 11 cyfr';
-            validationMsg.style.display='block';
-            return false;
-          }
-          return true;
-        }
-        return true;
-      }
+    if(q.type === 'end') {
+      addMsg(q.text, 'bot');
+      userInput.disabled = true;
+      sendBtn.disabled = true;
+      optionsRow.innerHTML = '';
+      downloadPdfBtn.style.display = 'block';
+      return;
+    }
 
-      // Check if question should be shown based on previous answers
-      function shouldShowQuestion(q) {
-        if (!q.showIf) return true;
-        const dependentVal = answers[q.showIf.field];
-        return dependentVal === q.showIf.value;
-      }
+    if(q.type === 'info') {
+      addMsg(q.text, 'bot');
+      currentStep++;
+      setTimeout(nextStep, 1000); // Automatyczne przejście
+      return;
+    }
 
-      closedAnswers.addEventListener('click', (ev)=>{
-        const btn = ev.target.closest('button[data-val]');
-        if(!btn) return;
-        const v = btn.dataset.val;
-        handleAnswer(v);
+    // Render pytania
+    let html = `<strong>${q.text}</strong>`;
+    if(q.hint) html += `<br><span style="font-size:13px; color:#666; font-style:italic">💡 ${q.hint}</span>`;
+
+    addMsg(html, 'bot');
+
+    // UI Inputu
+    userInput.value = '';
+    optionsRow.innerHTML = '';
+    validationMsg.style.display = 'none';
+
+    if(q.type === 'choice') {
+      userInput.style.display = 'none';
+      sendBtn.style.display = 'none';
+      q.options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.innerText = opt;
+        btn.onclick = () => handleInput(opt);
+        optionsRow.appendChild(btn);
       });
+    } else {
+      userInput.style.display = 'block';
+      sendBtn.style.display = 'block';
+      userInput.focus();
+    }
+  }
 
-      sendBtn.addEventListener('click', ()=>{
-        const text = textInput.value.trim();
-        if(!text) return;
-        handleAnswer(text);
-      });
-      textInput.addEventListener('keydown', (e)=>{
-        if(e.key === 'Enter' && !e.shiftKey){
-          e.preventDefault();
-          sendBtn.click();
-        }
-      });
+  function handleInput(val) {
+    const q = scenario[currentStep];
 
-      function start(){
-        // Render prefilled (if any)
-        for(const k of Object.keys(prefill)){
-          const q = questions.find(x=>x.id===k);
-          if(q && shouldShowQuestion(q)){
-            userMsg(`<strong>${q.label}:</strong> ${escapeHtml(prefill[k])}`);
-          }
-        }
-        renderPreview();
-        setTimeout(()=>askNext(), 500);
+    // Walidacja
+    if(q.validate) {
+      const check = q.validate(val);
+      if(check !== true) {
+        validationMsg.innerText = check;
+        validationMsg.style.display = 'block';
+        return;
       }
+    }
 
-      function askNext(){
-        if(qIndex >= questions.length){
-          botMsg('Wypełnianie zakończone — możesz pobrać PDF.');
-          textInput.placeholder = 'Notatki...';
-          closedAnswers.style.display='none';
-          return;
-        }
+    // Zapis odpowiedzi
+    answers[q.id] = val;
 
-        const q = questions[qIndex];
+    // Wizualizacja odpowiedzi usera
+    if(q.type !== 'choice') addMsg(val, 'user');
+    else addMsg(val, 'user'); // też pokaż co kliknął
 
-        // LOGIKA POMIJANIA
-        if (!shouldShowQuestion(q)) {
-          // Skip this question
-          // Clean up old answer if exists (e.g. user went back and changed YES to NO)
-          if(answers[q.id]) delete answers[q.id];
+    // Efekty uboczne (sidebar, logika)
+    updateSidebar(q.id, val);
 
-          qIndex++;
-          askNext(); // Recurse immediately
-          return;
-        }
+    currentStep++;
+    setTimeout(nextStep, 500);
+  }
 
-        botMsg(`<strong>${q.label}</strong><div style="margin-top:8px; color:#6b7280; font-size:13px">${q.type === 'closed' ? 'Wybierz opcję' : 'Wpisz treść'}</div>`);
+  // --- EVENT LISTENERS ---
+  sendBtn.addEventListener('click', () => {
+    const txt = userInput.value.trim();
+    if(txt) handleInput(txt);
+  });
 
-        // If already answered (and logic allows), skip interaction
-        if(answers[q.id]){
-          setTimeout(()=>{
-            userMsg(`<strong>${q.label}:</strong> ${escapeHtml(answers[q.id])}`);
-            qIndex++;
-            renderPreview();
-            setTimeout(()=>askNext(), 400);
-          }, 400);
-          return;
-        }
+  userInput.addEventListener('keypress', (e) => {
+    if(e.key === 'Enter') sendBtn.click();
+  });
 
-        // Setup UI
-        if(q.type === 'closed'){
-          closedAnswers.style.display='block';
-          textInput.disabled = true;
-          sendBtn.disabled = true;
-        } else {
-          closedAnswers.style.display='none';
-          textInput.disabled = false;
-          sendBtn.disabled = false;
-          textInput.focus();
-        }
-      }
+  // --- PDF GENERATOR (Rozbudowany) ---
+  downloadPdfBtn.addEventListener('click', async () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const btn = downloadPdfBtn;
 
-      function handleAnswer(value){
-        const q = questions[qIndex];
-        if(!q){
-          userMsg(escapeHtml(value));
-          return;
-        }
-        const ok = validateField(q, value);
-        if(!ok) return;
+    btn.innerHTML = '<span class="spinner"></span> Generowanie PDF...';
 
-        answers[q.id] = value;
-        userMsg(`<strong>${q.label}:</strong> ${escapeHtml(value)}`);
-        renderPreview();
+    // Pobieranie czcionki PL (konieczne dla polskich znaków)
+    try {
+        const fontRes = await fetch('https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf');
+        const fontBuf = await fontRes.arrayBuffer();
+        const fontBase64 = btoa(new Uint8Array(fontBuf).reduce((data, byte) => data + String.fromCharCode(byte), ''));
 
-        textInput.value = '';
-        validationMsg.style.display='none';
-        closedAnswers.style.display='none';
-        textInput.disabled = false;
-        sendBtn.disabled = false;
+        doc.addFileToVFS("Roboto.ttf", fontBase64);
+        doc.addFont("Roboto.ttf", "Roboto", "normal");
+        doc.setFont("Roboto");
+    } catch(e) {
+        console.warn("Brak czcionki PL, znaki mogą być zniekształcone");
+    }
 
-        qIndex++;
-        setTimeout(()=>askNext(), 350);
-      }
+    let y = 20;
+    const margin = 15;
 
-      // --- PDF GENERATION WITH POLISH CHARACTERS ---
-      downloadPdf.addEventListener('click', async ()=>{
-        const btn = downloadPdf;
-        const originalText = btn.innerText;
-        btn.innerHTML = '<span class="spinner"></span> Generuję...';
-        btn.disabled = true;
+    // NAGŁÓWEK
+    doc.setFontSize(18);
+    doc.setTextColor(0, 82, 163);
+    doc.text("Karta Wypadku / Zgłoszenie (Projekt ZANT)", margin, y);
+    y += 10;
 
-        try {
-          const { jsPDF } = window.jspdf;
-          const doc = new jsPDF({format:'a4', unit:'mm'});
+    doc.setFontSize(10);
+    doc.setTextColor(100);
+    doc.text(`Data wygenerowania: ${new Date().toLocaleDateString()}`, margin, y);
+    y += 15;
 
-          // 1. Ładowanie czcionki obsługującej polskie znaki (Roboto Regular)
-          // Używamy CDN, który pozwala na dostęp (CORS)
-          const fontUrl = 'https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.66/fonts/Roboto/Roboto-Regular.ttf';
+    // SEKCJA 1: DANE
+    doc.setFontSize(12);
+    doc.setTextColor(0);
+    doc.setFillColor(240, 242, 245);
+    doc.rect(margin, y-5, 180, 8, 'F');
+    doc.text("I. Dane Zgłaszającego i Firmy", margin+2, y);
+    y += 10;
 
-          const response = await fetch(fontUrl);
-          if(!response.ok) throw new Error("Błąd pobierania czcionki");
-          const fontBuffer = await response.arrayBuffer();
+    const printLine = (label, val) => {
+        doc.setFontSize(10);
+        doc.setTextColor(80);
+        doc.text(label, margin, y);
+        doc.setTextColor(0);
+        const splitVal = doc.splitTextToSize(val || "---", 120);
+        doc.text(splitVal, margin + 50, y);
+        y += (splitVal.length * 5) + 3;
+    };
 
-          // Konwersja buffer -> string binary
-          const fontData = Array.from(new Uint8Array(fontBuffer)).map(b => String.fromCharCode(b)).join("");
-          const fontBase64 = btoa(fontData);
+    printLine("Tryb zgłoszenia:", answers.tryb);
+    printLine("Rola:", answers.rola);
+    printLine("Firma (z NIP):", answers._firma);
+    printLine("Kod PKD:", answers._pkd);
+    printLine("Poszkodowany:", `${answers.imie} ${answers.nazwisko}`);
 
-          // Dodanie czcionki do VFS jsPDF
-          doc.addFileToVFS("Roboto-Regular.ttf", fontBase64);
-          doc.addFont("Roboto-Regular.ttf", "Roboto", "normal");
+    y += 5;
 
-          // Ustawienie czcionki
-          doc.setFont("Roboto", "normal");
+    // SEKCJA 2: ANALIZA WYPADKU
+    doc.setFillColor(240, 242, 245);
+    doc.rect(margin, y-5, 180, 8, 'F');
+    doc.setTextColor(0);
+    doc.setFontSize(12);
+    doc.text("II. Analiza okoliczności (Drzewo przyczyn)", margin+2, y);
+    y += 10;
 
-          // Start PDF content
-          const margin = 15;
-          const lineHeight = 7;
-          let y = margin;
+    printLine("Czas i miejsce:", `${answers.data_godzina}, ${answers.miejsce}`);
+    printLine("Czynność przed (Związek z pracą):", answers.czynnosc_przed);
+    printLine("Zdarzenie (Nagłość):", answers.zdarzenie);
+    printLine("Przyczyna zewn.:", answers.przyczyna_zew);
+    printLine("Skutek (Uraz):", answers.uraz);
 
-          doc.setFontSize(16);
-          // Upewnij się, że tekst jest w UTF-8 (JS strings są domyślnie UTF-16, jsPDF z custom font obsłuży to)
-          doc.text('EWYP — Zawiadomienie o wypadku', margin, y);
-          y += 10;
-          doc.setFontSize(11);
+    if(answers.swiadkowie === 'TAK') {
+       printLine("Świadkowie:", answers.dane_swiadkow);
+    } else {
+       printLine("Świadkowie:", "Brak");
+    }
 
-          for(const q of questions){
-            // Add to PDF only if question was shown (answered) or if it was valid to show
-            if(shouldShowQuestion(q)){
-              const label = q.label;
-              const val = answers[q.id] ? String(answers[q.id]) : '(brak odpowiedzi)';
+    y += 10;
 
-              // Sprawdzenie miejsca na stronie
-              if(y > 270){ doc.addPage(); y = margin; }
+    // SEKCJA 3: INSTRUKCJA (ZANT Requirement 5 & 6)
+    if(y > 220) { doc.addPage(); y=20; }
 
-              doc.setFont("Roboto", "normal"); // dla pewności
-              doc.setFontSize(10);
-              doc.setTextColor(100);
-              doc.text(label, margin, y);
-              y += 5;
+    doc.setDrawColor(0, 82, 163);
+    doc.setLineWidth(0.5);
+    doc.line(margin, y, 195, y);
+    y += 10;
 
-              doc.setFontSize(11);
-              doc.setTextColor(0);
+    doc.setFontSize(14);
+    doc.setTextColor(0, 82, 163);
+    doc.text("Twoja spersonalizowana lista zadań", margin, y);
+    y += 10;
 
-              // Zawijanie tekstu
-              const splitVal = doc.splitTextToSize(val, 180);
-              doc.text(splitVal, margin, y);
-              y += (splitVal.length * 6) + 4;
-            }
-          }
+    doc.setFontSize(11);
+    doc.setTextColor(0);
 
-          if(y > 270){ doc.addPage(); y = margin; }
-          doc.setFontSize(9);
-          doc.setTextColor(150);
-          doc.text('Wygenerowano automatycznie.', margin, y+10);
+    const todo = [];
+    todo.push("1. Wydrukuj i podpisz niniejsze zawiadomienie.");
+    if(answers.rola && answers.rola.includes('pełnomocnik')) {
+        todo.push("2. DOŁĄCZ PEŁNOMOCNICTWO (Druk OL-PEL) - jest wymagane, bo działasz w imieniu innej osoby.");
+    }
+    if(answers.dokumentacja_med === 'TAK') {
+        todo.push("3. Skompletuj dokumentację medyczną (Karta informacyjna ze szpitala, historia choroby).");
+    } else {
+        todo.push("3. UWAGA: Udaj się do lekarza, aby uzyskać potwierdzenie urazu. Bez tego ZUS może odmówić świadczeń.");
+    }
+    todo.push("4. Złóż komplet dokumentów przez PUE ZUS (eZUS) lub w placówce.");
 
-          doc.save(`EWYP_${(answers.nazwisko || 'wypadek')}.pdf`);
+    todo.forEach(item => {
+       const lines = doc.splitTextToSize(item, 170);
+       doc.text(lines, margin, y);
+       y += (lines.length * 6) + 4;
+    });
 
-        } catch(e) {
-          alert("Błąd generowania PDF (sprawdź internet dla czcionki): " + e.message);
-          console.error(e);
-        } finally {
-          btn.innerHTML = originalText;
-          btn.disabled = false;
-        }
-      });
+    // Stopka
+    y = 280;
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text("Dokument wygenerowany przez system ZANT (Prototyp). Nie stanowi decyzji administracyjnej.", margin, y);
 
-      start();
+    doc.save("Zgloszenie_ZANT.pdf");
 
-    })();
-  </script>
+    btn.innerHTML = "Pobrano PDF";
+  });
+
+  // START
+  // Opóźnienie startu dla efektu ładowania
+  setTimeout(() => nextStep(), 500);
+
+})();
+</script>
 </body>
 </html>

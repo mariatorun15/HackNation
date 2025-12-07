@@ -39,6 +39,14 @@
     <div id="resultsMultiple"></div>
   </section>
 
+  <section>
+    <div>
+      <button id="compareBtn">Porównaj pliki</button>
+    </div>
+
+    <pre id="compareOutput" style="background:#f0f0f0; padding:10px; margin-top:10px;"></pre>
+  </section>
+
   <!-- Sekcja wyników analizy -->
   <section id="analysisSection" style="display:none">
     <h2>Wynik analizy</h2>
@@ -72,9 +80,26 @@
     const rawEl = document.getElementById("raw");
     const saveBtn = document.getElementById("saveBtn");
 
+    const compareBtn = document.getElementById("compareBtn");
+
     let lastFileId = null;
     let lastExtracted = {};
     let lastMissing = [];
+
+    compareBtn.onclick = async () => {
+    // przykładowo pobieramy wszystkie pliki *_analysis.json
+    const files = await fetch("/results").then(res => res.json());
+
+    const res = await fetch("/compare", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ files })
+    });
+
+    const data = await res.json();
+    document.getElementById("compareOutput").textContent = JSON.stringify(data, null, 2);
+
+    };
 
     // --- Upload wielu plików ---
     uploadBtnMultiple.onclick = async () => {
@@ -84,6 +109,7 @@
 
       const files = fileInputMultiple.files;
       if (files.length === 0) { alert("Wybierz pliki"); return; }
+      if (files.length != 4) {alert("Odpowiedź bedzie nie pewna")}
 
       uploadMsgMultiple.textContent = `Rozpoczynam wysyłanie ${files.length} plików...`;
 

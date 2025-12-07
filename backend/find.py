@@ -15,23 +15,43 @@ def find_date(text):
     if not text:
         return None
     # dd.mm.yyyy or yyyy-mm-dd etc.
-    m = re.search(r"(\d{2}[.\-/]\d{2}[.\-/]\d{4})", text)
+    m = re.search(r"(\d{2}[.\-/—]\d{2}[.\-/—]\d{4})", text)
     if m:
         return m.group(1)
-    m = re.search(r"(\d{4}[.\-/]\d{2}[.\-/]\d{2})", text)
+    m = re.search(r"(\d{4}[.\-/—]\d{2}[.\-/—]\d{2})", text)
     if m:
         return m.group(1)
     
     return None
 
-def find_time(text):
+def find_sit_time(text):
     if not text:
         return None
-    # dd.mm.yyyy or yyyy-mm-dd etc.
-    m = re.search(r'godz\. *(około *)?(\d{1,2}(:\d{2})?)', text)
+    m = re.search(r'około\s*godz\.?\s*[: ]?(\d{1,2}[.:]\d{2})', text, re.IGNORECASE)
     if m:
-        return m.group(2)
+        return m.group(1)
     return None
+
+def find_start_time(text):
+    if not text:
+        return None
+    m = re.search(r'rozpoczął.*?o\s*godz\.?\s*(\d{1,2}[.:]\d{2})', text, re.IGNORECASE)
+    if m:
+        return m.group(1)
+    return None
+
+def find_end_time(text):
+    if not text:
+        return None
+    m = re.search(
+        r'(?:planowana\s+)?godzina\s+zakończenia\s+pracy\s*(\d{1,2}[.:]\d{2})',
+        text,
+        re.IGNORECASE
+    )
+    if m:
+        return m.group(1)
+    return None
+
 
 def find_place(text):
     if not text:
@@ -52,6 +72,9 @@ def find_injuries(text):
     m = re.search(r'Rodzaj doznanych urazów\s*(.*?)\n', text, re.DOTALL)
     if m:
         return m.group(1).strip()
+    m = re.search(r'rozpoznano: (.*?)(?:\.|,)', text)
+    if m:
+        return m.group(1).strip()
     return None
 
 def find_history(text):
@@ -70,6 +93,9 @@ def find_aid(text):
     m = extract_option(r'Czy była udzielona pierwsza pomoc medyczna:\s*(TAK|NIE)', text)
     if m:
         return m
+    m = re.search(r'Pierwszej pomocy udzielono (.*?)(?:\.|,)', text)
+    if m:
+        return m.group(1).strip()
     return None
 
 def find_mashine(text):
@@ -90,21 +116,3 @@ def find_bhp(text):
         return m
     return None
     
-
-def find_name(text):
-    # naive: line with CAPITALIZED words (Polish names)
-    if not text:
-        return None
-    lines = text.splitlines()
-    for line in lines:
-        if re.match(r"^[A-ZĄĆĘŁŃÓŚŹŻ][a-ząęćłńóśźż]+(\s+[A-ZĄĆĘŁŃÓŚŹŻ][a-ząęćłńóśźż]+)+", line.strip()):
-            return line.strip()
-    return None
-
-def find_vehicle_number(text):
-    if not text:
-        return None
-    m = re.search(r"\b([A-Z]{1,3}-\w{1,5})\b", text)
-    if m:
-        return m.group(1)
-    return None

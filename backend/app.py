@@ -72,6 +72,89 @@ def ask():
 
     return jsonify({"answer": answer})
 
+
+@app.route("/compare", methods=["POST"])
+def compare():
+    import json
+
+    # Lista plików do analizy – frontend może wysłać np. ["p1.json", "p2.json"]
+    data = request.get_json() or {}
+    files = data.get("files", [])
+
+    if not files:
+        return jsonify({"error": "Brak listy plików"}), 400
+
+    loaded = []
+    for f in files:
+        path = os.path.join(RESULTS_FOLDER, f)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as fp:
+                loaded.append(json.load(fp))
+
+    if not loaded:
+        return jsonify({"error": "Brak poprawnych plików"}), 400
+
+    # -------------------------
+    # PORÓWNANIE PARAMETRÓW
+    # -------------------------
+    diffs = {}     # parametry, które są różne
+    matches = {}   # parametry, które są zgodne
+
+    # pobierz listę wszystkich pól
+    all_keys = set()
+    for doc in loaded:
+        all_keys |= set(doc["extracted"].keys())
+
+    for key in all_keys:
+        values = [doc["extracted"].get(key) for doc in loaded]
+        unique = set(values)
+
+        if len(unique) == 1:
+            matches[key] = list(unique)[0]
+        else:
+            diffs[key] = list(unique)
+
+    # -------------------------
+    # WNIOSEK O CZAS I MIEJSCE
+    # -------------------------
+
+    def most_common(lst):
+        return max(set(lst), key=lst.count)
+
+    result_summary = {}
+
+    # analizujemy "data" + "miejsce"
+    times = [doc["extracted"].get("data") for doc in loaded]
+    places = [doc["extracted"].get("miejsce") for doc in loaded]
+
+    common_time = most_common(times)
+    common_place = most_common(places)
+
+    time_consistency = times.count(common_time) / len(times)
+    place_consistency = places.count(common_place) / len(places)
+
+    if time_consistency > 0.5 and place_consistency > 0.5:
+        result_summary["wniosek"] = (
+            "Prawdopodobnie sytuacja rzeczywiście miała miejsce – "
+            "data i miejsce są zgodne w większości dokumentów."
+        )
+    else:
+        result_summary["wniosek"] = (
+            "Brak wystarczającej zgodności daty i miejsca, aby potwierdzić zdarzenie."
+        )
+
+    return jsonify({
+        "różnice": diffs,
+        "zgodności": matches,
+        **result_summary
+    })
+
+@app.route("/results", methods=["GET"])
+def list_results():
+    files = [f for f in os.listdir(RESULTS_FOLDER) if f.endswith("_analysis.json")]
+    return jsonify(files)
+
+
 @app.route("/complete", methods=["POST"])
 def complete():
     data = request.json or {}

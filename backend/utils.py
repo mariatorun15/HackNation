@@ -183,21 +183,18 @@ def extract_fields_by_type(text, doc_type):
     t = text or ""
     if doc_type == "karta_wypadku":
         data["data_wypadku"] = find_date(t)
-        data["miejsce_wypadku"] = None
-        data["imie_nazwisko_poszkodowanego"] = find_name(t)
-        data["opis_okolicznosci"] = None
-        data["rodzaj_obrazen"] = None
+        data["miejsce_wypadku"] = find_place(t)
+        data["opis_zdarzenia"] = find_history(t)
+        data["rodzaj_obrazen"] = find_injuries(t)
     elif doc_type == "opinia":
         data["data_wypadku"] = find_date(t)
-        data["autor_opinii"] = find_name(t)
         data["tresc_opinii"] = None
-        data["podpis_autora"] = None
     elif doc_type == "zapis_wyjasnien_poszkodowanego":
-        data["data_wyp"] = find_date(t)
-        data["miejsce_wyp"] = find_place(t)
-        data["godzina_wyp"] = find_time(t)
-        data["godzina_rozp_pracy"] = find_time(t)
-        data["godzina_zak_pracy"] = find_time(t)
+        data["data_wypadku"] = find_date(t)
+        data["miejsce_wypadku"] = find_place(t)
+        data["godzina_wypadku"] = find_sit_time(t)
+        data["godzina_roz_pracy"] = find_start_time(t)
+        data["godzina_zak_pracy"] = find_start_time(t)
         data["imie_nazwisko_poszkodowanego"] = None
         data["rodzaj_czynosci"] = None
         data["opis_zdarzenia"] = find_history(t)
@@ -207,12 +204,11 @@ def extract_fields_by_type(text, doc_type):
         data["pierwsza_pomoc"] = find_aid(t)
     elif doc_type == "zawiadomienie_o_wypadku":
         data["data_wypadku"] = find_date(t)
-        data["miejscowosc"] = find_place(t)
-        data["godzina_wypadku"] = find_time(t)
-        data["miejsce"] = find_place(t)
-        data["godzina_roz_pracy"] = find_time(t)
-        data["godzina_zak_pracy"] = find_time(t)
-        data["rodzaj_urazow"] = find_injuries(t)
+        data["miejsce_wypadku"] = find_place(t)
+        data["godzina_wypadku"] = find_sit_time(t)
+        data["godzina_roz_pracy"] = find_start_time(t)
+        data["godzina_zak_pracy"] = find_start_time(t)
+        data["rodzaj_obrazen"] = find_injuries(t)
         data["opis_zdarzenia"] = find_history(t)
         data["pierwsza_pomoc"] = find_aid(t)
         data["obsluga_maszyny"] = find_mashine(t)

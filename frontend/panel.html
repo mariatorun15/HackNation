@@ -160,35 +160,35 @@ uploadBtnMultiple.onclick = async () => {
     uploadMsgMultiple.textContent = `Zakończono wysyłanie wszystkich ${files.length} plików.`;
 };
 
-uploadBtn.onclick = async () => {
-  uploadMsg.textContent = "";
+uploadBtnMultiple.onclick = async () => {
+  uploadMsgMultiple.textContent = "";
   analysisSection.style.display = "none";
   extractedEl.innerHTML = "";
   fillForm.innerHTML = "";
   rawEl.textContent = "";
 
-  const file = fileInput.files[0];
+  const file = fileInputMultiple.files[0];
   if (!file) { alert("Wybierz plik"); return; }
 
   const fd = new FormData();
   fd.append("file", file);
 
-  uploadMsg.textContent = "Wysyłam plik...";
+  uploadMsgMultiple.textContent = "Wysyłam plik...";
   try {
     const resp = await fetch("/upload", { method: "POST", body: fd });
     const data = await resp.json();
     if (data.error) {
-      uploadMsg.textContent = "Błąd: " + data.error;
+      uploadMsgMultiple.textContent = "Błąd: " + data.error;
       return;
     }
-    uploadMsg.textContent = "Plik przesłany. Wyniki analizy poniżej.";
+    uploadMsgMultiple.textContent = "Plik przesłany. Wyniki analizy poniżej.";
     lastFileId = data.file_id;
     lastExtracted = data.extracted || {};
     lastMissing = data.missing || [];
     showAnalysis(data);
   } catch (e) {
     console.error(e);
-    uploadMsg.textContent = "Błąd sieci.";
+    uploadMsgMultiple.textContent = "Błąd sieci.";
   }
 };
 
